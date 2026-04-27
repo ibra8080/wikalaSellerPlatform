@@ -5,6 +5,7 @@ from .models import VariantInventory, InboundShipmentUpdate
 from .serializers import VariantInventorySerializer, InboundShipmentUpdateSerializer
 from apps.sellers.views import IsSeller, IsAdmin
 from apps.products.models import Product
+from utils.email import send_shipment_updated
 import django.utils.timezone as timezone
 
 
@@ -40,7 +41,7 @@ class AdminShipmentUpdateView(generics.CreateAPIView):
         if to_status == 'in_warehouse_egypt':
             ownership_transferred_at = timezone.now()
 
-        update = serializer.save(
+        serializer.save(
             updated_by=self.request.user,
             from_status=product.status,
             ownership_transferred_at=ownership_transferred_at
@@ -48,6 +49,7 @@ class AdminShipmentUpdateView(generics.CreateAPIView):
 
         product.status = to_status
         product.save()
+        send_shipment_updated(product, to_status)
 
 
 class AdminInventoryDetailView(generics.RetrieveUpdateAPIView):

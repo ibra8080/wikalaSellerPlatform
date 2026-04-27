@@ -1,11 +1,17 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser, FormParser
+from django.utils import timezone
 from .models import Product, ProductVariant, ProductImage, Certification, ProductPromotion, Category
 from .serializers import (
     ProductSerializer, ProductCreateSerializer, CategorySerializer,
-    ProductVariantSerializer, CertificationSerializer, ProductPromotionSerializer
+    ProductVariantSerializer, CertificationSerializer, ProductPromotionSerializer,
+    ProductImageSerializer
 )
 from apps.sellers.views import IsSeller, IsAdmin
+from utils.cloudinary import upload_image
+from utils.email import send_product_approved, send_product_rejected
 
 
 class CategoryListView(generics.ListAPIView):
@@ -51,6 +57,15 @@ class AdminProductDetailView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated, IsAdmin]
     queryset = Product.objects.all()
 
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        if instance.status == 'approved' and not instance.approved_at:
+            instance.approved_at = timezone.now()
+            instance.save()
+            send_product_approved(instance)
+        elif instance.status == 'rejected':
+            send_product_rejected(instance)
+
 
 # Seller: manage product variants
 class ProductVariantView(generics.ListCreateAPIView):
@@ -83,3 +98,34 @@ class ProductPromotionView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(seller=self.request.user.seller_profile)
+
+
+class ProductImageUploadView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsSeller]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request, pk):
+        product = Product.objects.get(
+            id=pk,
+            seller=request.user.seller_profile
+        )
+        file = request.FILES.get('image')
+        if not file:
+            return Response(
+                {'error': 'No image provided'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        url = upload_image(file, folder='products')
+        is_primary = not product.images.exists()
+
+        image = ProductImage.objects.create(
+            product=product,
+            image_url=url,
+            is_primary=is_primary,
+            order=product.images.count()
+        )
+        return Response(
+            ProductImageSerializer(image).data,
+            status=status.HTTP_201_CREATED
+        )

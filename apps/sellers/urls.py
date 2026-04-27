@@ -2,7 +2,8 @@ from django.urls import path
 from .views import (
     SellerRegisterView, SellerProfileView,
     SellerListView, SellerDetailView,
-    SellerDocumentView, SellerPromotionView
+    SellerDocumentView, SellerPromotionView,
+    SellerDocumentUploadView
 )
 
 urlpatterns = [
@@ -10,6 +11,7 @@ urlpatterns = [
     path('register/', SellerRegisterView.as_view(), name='seller-register'),
     path('profile/', SellerProfileView.as_view(), name='seller-profile'),
     path('documents/', SellerDocumentView.as_view(), name='seller-documents'),
+    path('documents/upload/', SellerDocumentUploadView.as_view(), name='seller-document-upload'),
     path('promotions/', SellerPromotionView.as_view(), name='seller-promotions'),
 
     # Admin

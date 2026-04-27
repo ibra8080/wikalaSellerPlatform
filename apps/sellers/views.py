@@ -1,11 +1,15 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser, FormParser
+from django.utils import timezone
 from .models import SellerProfile, SellerDocument, SellerTier
 from .serializers import (
     SellerProfileSerializer, SellerRegisterSerializer,
     SellerDocumentSerializer, SellerTierSerializer, SellerPromotionSerializer
 )
+from utils.cloudinary import upload_document
+from utils.email import send_seller_approved, send_seller_rejected
 
 
 class IsSeller(permissions.BasePermission):
@@ -46,6 +50,15 @@ class SellerDetailView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated, IsAdmin]
     queryset = SellerProfile.objects.all()
 
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        if instance.status == 'approved' and not instance.approved_at:
+            instance.approved_at = timezone.now()
+            instance.save()
+            send_seller_approved(instance)
+        elif instance.status == 'rejected':
+            send_seller_rejected(instance)
+
 
 # Seller: upload documents
 class SellerDocumentView(generics.ListCreateAPIView):
@@ -66,3 +79,29 @@ class SellerPromotionView(generics.ListAPIView):
 
     def get_queryset(self):
         return self.request.user.seller_profile.promotions.filter(is_active=True)
+
+
+class SellerDocumentUploadView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsSeller]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        file = request.FILES.get('file')
+        doc_type = request.data.get('doc_type')
+
+        if not file or not doc_type:
+            return Response(
+                {'error': 'file and doc_type are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        url = upload_document(file, folder='seller_documents')
+        document = SellerDocument.objects.create(
+            seller=request.user.seller_profile,
+            doc_type=doc_type,
+            file_url=url
+        )
+        return Response(
+            SellerDocumentSerializer(document).data,
+            status=status.HTTP_201_CREATED
+        )
