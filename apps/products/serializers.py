@@ -55,7 +55,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'images', 'variants', 'certifications'
         )
         read_only_fields = (
-            'product_code', 'seller', 'status', 'rejection_reason',
+            'product_code', 'seller',
             'shopify_product_id', 'approved_at', 'listed_at', 'created_at'
         )
 

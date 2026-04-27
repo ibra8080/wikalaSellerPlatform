@@ -9,12 +9,11 @@ class SellerProfileSerializer(serializers.ModelSerializer):
             'id', 'seller_id', 'full_name', 'business_name',
             'profile_pic_url', 'bio', 'phone', 'whatsapp',
             'country', 'city', 'seller_tier', 'status',
-            'rejection_reason', 'exported_before', 'referral_source',
-            'approved_at', 'created_at'
+            'rejection_reason', 'approved_at', 'created_at',
+            'exported_before', 'referral_source'
         )
         read_only_fields = (
-            'id', 'seller_id', 'status', 'rejection_reason',
-            'approved_at', 'created_at'
+            'id', 'seller_id', 'approved_at', 'created_at'
         )
 
 

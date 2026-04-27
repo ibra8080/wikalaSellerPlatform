@@ -142,7 +142,7 @@ class ProductVariant(models.Model):
         return f"{self.sku} ({self.color} / {self.size})"
 
     def save(self, *args, **kwargs):
-        if not self.sku:
+        if not self.sku and self.product.product_code:
             parts = [self.product.product_code]
             if self.color:
                 parts.append(self.color[:3].upper())
