@@ -13,7 +13,7 @@ class ContractSerializer(serializers.ModelSerializer):
             'id', 'seller', 'seller_name', 'file_url',
             'type', 'signed_at', 'created_at'
         )
-        read_only_fields = ('id', 'seller', 'created_at')
+        read_only_fields = ('id', 'seller_name', 'created_at')
 
 
 class ShippingFeeOptionSerializer(serializers.ModelSerializer):

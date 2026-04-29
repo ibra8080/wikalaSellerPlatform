@@ -29,4 +29,7 @@ class InboundShipmentUpdateSerializer(serializers.ModelSerializer):
             'from_status', 'to_status',
             'ownership_transferred_at', 'note', 'created_at'
         )
-        read_only_fields = ('id', 'updated_by', 'updated_by_email', 'created_at')
+        read_only_fields = (
+            'id', 'updated_by', 'updated_by_email',
+            'from_status', 'created_at'
+        )

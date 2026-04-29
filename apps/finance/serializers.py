@@ -37,4 +37,4 @@ class SellerStatementSerializer(serializers.ModelSerializer):
             'pick_pack_amount', 'shipping_fee_amount', 'external_sales_amount',
             'net_amount', 'status', 'paid_at', 'created_at', 'sale_records'
         )
-        read_only_fields = ('id', 'seller', 'created_at')
+        read_only_fields = ('id', 'seller_name', 'created_at')
