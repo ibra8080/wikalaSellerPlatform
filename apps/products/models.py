@@ -1,3 +1,4 @@
+import random
 from django.db import models
 from apps.sellers.models import SellerProfile
 
@@ -107,9 +108,13 @@ class Product(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.product_code and self.status == self.Status.APPROVED:
-            last = Product.objects.order_by('-id').first()
-            next_id = (last.id + 1) if last else 1
-            self.product_code = f"WKP-{next_id:05d}"
+            seller_num = self.seller.seller_id.replace('WK-', '')
+            random_part = random.randint(100, 999)
+            count = Product.objects.filter(
+                seller=self.seller,
+                status=self.Status.APPROVED
+            ).count() + 1
+            self.product_code = f"WKP{seller_num}{random_part}{count:03d}"
         super().save(*args, **kwargs)
 
 
@@ -135,6 +140,11 @@ class ProductVariant(models.Model):
     color = models.CharField(max_length=50, blank=True)
     size = models.CharField(max_length=20, blank=True)
     sku = models.CharField(max_length=50, unique=True, blank=True)
+    external_barcode = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="EAN-13, UPC, أو أي كود خارجي للبائع"
+    )
     quantity_submitted = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -143,12 +153,10 @@ class ProductVariant(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.sku and self.product.product_code:
-            parts = [self.product.product_code]
-            if self.color:
-                parts.append(self.color[:3].upper())
-            if self.size:
-                parts.append(self.size.upper())
-            self.sku = "-".join(parts)
+            variant_num = ProductVariant.objects.filter(
+                product=self.product
+            ).count() + 1
+            self.sku = f"{self.product.product_code}{variant_num:03d}"
         super().save(*args, **kwargs)
 
 
