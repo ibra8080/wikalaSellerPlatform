@@ -43,6 +43,26 @@ class ProductDetailView(generics.RetrieveUpdateAPIView):
     def get_queryset(self):
         return Product.objects.filter(seller=self.request.user.seller_profile)
 
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        data = self.request.data
+
+        needs_review_fields = {'price', 'name_ar', 'name_en', 'name_de'}
+        has_sensitive_change = bool(needs_review_fields & set(data.keys()))
+
+        active_statuses = [
+            'approved', 'listed', 'in_warehouse_germany',
+            'in_transit', 'in_warehouse_egypt', 'awaiting_seller_shipment'
+        ]
+
+        if has_sensitive_change and instance.status in active_statuses:
+            serializer.save(
+                status='pending_review',
+                previous_status=instance.status
+            )
+        else:
+            serializer.save()
+
 
 # Admin: list all products
 class AdminProductListView(generics.ListAPIView):
@@ -58,13 +78,25 @@ class AdminProductDetailView(generics.RetrieveUpdateAPIView):
     queryset = Product.objects.all()
 
     def perform_update(self, serializer):
-        instance = serializer.save()
-        if instance.status == 'approved' and not instance.approved_at:
-            instance.approved_at = timezone.now()
-            instance.save()
+        instance = self.get_object()
+        new_status = self.request.data.get('status')
+
+        if new_status == 'approved' and instance.previous_status:
+            serializer.save(
+                status=instance.previous_status,
+                previous_status=''
+            )
             send_product_approved(instance)
-        elif instance.status == 'rejected':
+        elif new_status == 'approved' and not instance.previous_status:
+            instance_updated = serializer.save(status='approved')
+            instance_updated.approved_at = timezone.now()
+            instance_updated.save()
+            send_product_approved(instance_updated)
+        elif new_status == 'rejected':
+            serializer.save()
             send_product_rejected(instance)
+        else:
+            serializer.save()
 
 
 # Seller: manage product variants

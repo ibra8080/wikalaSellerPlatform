@@ -97,6 +97,7 @@ class Product(models.Model):
         default=Status.DRAFT
     )
     rejection_reason = models.TextField(blank=True)
+    previous_status = models.CharField(max_length=30, blank=True)
     shopify_product_id = models.CharField(max_length=50, blank=True)
     approved_at = models.DateTimeField(null=True, blank=True)
     listed_at = models.DateTimeField(null=True, blank=True)

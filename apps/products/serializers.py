@@ -50,7 +50,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'unit_weight_kg', 'unit_length_cm', 'unit_width_cm', 'unit_height_cm',
             'units_per_carton', 'carton_weight_kg',
             'carton_length_cm', 'carton_width_cm', 'carton_height_cm',
-            'has_care_label', 'status', 'rejection_reason',
+            'has_care_label', 'status', 'rejection_reason', 'previous_status',
             'shopify_product_id', 'approved_at', 'listed_at', 'created_at',
             'images', 'variants', 'certifications'
         )
