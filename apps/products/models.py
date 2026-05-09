@@ -1,4 +1,5 @@
 import random
+import time
 from django.db import models
 from apps.sellers.models import SellerProfile
 
@@ -34,7 +35,7 @@ class Product(models.Model):
     seller = models.ForeignKey(
         SellerProfile, on_delete=models.CASCADE, related_name='products'
     )
-    product_code = models.CharField(max_length=20, unique=True, blank=True)
+    product_code = models.CharField(max_length=20, unique=True, blank=True, null=True, default=None)
 
     # Names
     name_ar = models.CharField(max_length=200)
@@ -108,8 +109,11 @@ class Product(models.Model):
         return f"{self.product_code} — {self.name_en}"
 
     def save(self, *args, **kwargs):
-        if not self.product_code and self.status == self.Status.APPROVED:
+        if not self.product_code:
+            self.product_code = None
+        if self.product_code is None and self.status == self.Status.APPROVED:
             seller_num = self.seller.seller_id.replace('WK-', '')
+            random.seed(time.time_ns())
             random_part = random.randint(100, 999)
             count = Product.objects.filter(
                 seller=self.seller,
