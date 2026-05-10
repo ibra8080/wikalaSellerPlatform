@@ -46,7 +46,8 @@ class ProductSerializer(serializers.ModelSerializer):
             'name_ar', 'name_en', 'name_de',
             'description_ar', 'description_en', 'description_de',
             'marketing_desc_ar', 'marketing_desc_en', 'marketing_desc_de',
-            'materials', 'brand_name', 'keywords', 'category', 'price',
+            'materials', 'brand_name', 'model_number', 'custom_specs',
+            'keywords', 'category', 'price',
             'unit_weight_kg', 'unit_length_cm', 'unit_width_cm', 'unit_height_cm',
             'units_per_carton', 'carton_weight_kg',
             'carton_length_cm', 'carton_width_cm', 'carton_height_cm',
@@ -68,10 +69,12 @@ class ProductCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = (
+            'id',
             'name_ar', 'name_en', 'name_de',
             'description_ar', 'description_en', 'description_de',
             'marketing_desc_ar', 'marketing_desc_en', 'marketing_desc_de',
-            'materials', 'brand_name', 'keywords', 'category', 'price',
+            'materials', 'brand_name', 'model_number', 'custom_specs',
+            'keywords', 'category', 'price',
             'unit_weight_kg', 'unit_length_cm', 'unit_width_cm', 'unit_height_cm',
             'units_per_carton', 'carton_weight_kg',
             'carton_length_cm', 'carton_width_cm', 'carton_height_cm',

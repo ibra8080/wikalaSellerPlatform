@@ -55,6 +55,8 @@ class Product(models.Model):
     # Product details
     materials = models.TextField(blank=True)
     brand_name = models.CharField(max_length=100, blank=True)
+    model_number = models.CharField(max_length=100, blank=True)
+    custom_specs = models.JSONField(default=list, blank=True)
     keywords = models.TextField(blank=True)
     category = models.ForeignKey(
         Category, on_delete=models.SET_NULL,
@@ -144,7 +146,7 @@ class ProductVariant(models.Model):
     )
     color = models.CharField(max_length=50, blank=True)
     size = models.CharField(max_length=20, blank=True)
-    sku = models.CharField(max_length=50, unique=True, blank=True)
+    sku = models.CharField(max_length=50, unique=True, blank=True, null=True, default=None)
     external_barcode = models.CharField(
         max_length=50,
         blank=True,
@@ -157,7 +159,9 @@ class ProductVariant(models.Model):
         return f"{self.sku} ({self.color} / {self.size})"
 
     def save(self, *args, **kwargs):
-        if not self.sku and self.product.product_code:
+        if not self.sku:
+            self.sku = None
+        if self.sku is None and self.product.product_code:
             variant_num = ProductVariant.objects.filter(
                 product=self.product
             ).count() + 1
