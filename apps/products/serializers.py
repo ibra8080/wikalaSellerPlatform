@@ -17,7 +17,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
 class ProductVariantSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductVariant
-        fields = ('id', 'color', 'size', 'sku', 'quantity_submitted')
+        fields = ('id', 'color', 'size', 'sku', 'external_barcode', 'quantity_submitted')
         read_only_fields = ('sku',)
 
 
