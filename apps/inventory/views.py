@@ -1,13 +1,12 @@
 from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import VariantInventory, InboundShipmentUpdate
-from .serializers import VariantInventorySerializer, InboundShipmentUpdateSerializer
+from .models import VariantInventory, InboundShipmentUpdate, ShipmentRequest, ShipmentRequestItem
+from .serializers import VariantInventorySerializer, InboundShipmentUpdateSerializer, ShipmentRequestSerializer, ShipmentRequestItemSerializer
+from utils.email import send_shipment_request_accepted, send_shipment_updated
 from apps.sellers.views import IsSeller, IsAdmin
 from apps.products.models import Product
-from utils.email import send_shipment_updated
 import django.utils.timezone as timezone
-
 
 class SellerInventoryView(generics.ListAPIView):
     serializer_class = VariantInventorySerializer
@@ -56,3 +55,63 @@ class AdminInventoryDetailView(generics.RetrieveUpdateAPIView):
     serializer_class = VariantInventorySerializer
     permission_classes = [permissions.IsAuthenticated, IsAdmin]
     queryset = VariantInventory.objects.all()
+
+
+class ShipmentRequestListCreateView(generics.ListCreateAPIView):
+    serializer_class = ShipmentRequestSerializer
+    permission_classes = [permissions.IsAuthenticated, IsSeller]
+
+    def get_queryset(self):
+        return ShipmentRequest.objects.filter(
+            seller=self.request.user.seller_profile
+        ).order_by('-created_at')
+
+
+class ShipmentRequestDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ShipmentRequestSerializer
+    permission_classes = [permissions.IsAuthenticated, IsSeller]
+
+    def get_queryset(self):
+        return ShipmentRequest.objects.filter(
+            seller=self.request.user.seller_profile
+        )
+
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        if instance.status in ['accepted']:
+            raise permissions.PermissionDenied(
+                'Cannot modify an accepted shipment request.'
+            )
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if instance.status in ['accepted']:
+            raise permissions.PermissionDenied(
+                'Cannot delete an accepted shipment request.'
+            )
+        instance.delete()
+
+
+class AdminShipmentRequestListView(generics.ListAPIView):
+    serializer_class = ShipmentRequestSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    queryset = ShipmentRequest.objects.all().order_by('-created_at')
+
+
+class AdminShipmentRequestDetailView(generics.RetrieveUpdateAPIView):
+    serializer_class = ShipmentRequestSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    queryset = ShipmentRequest.objects.all()
+
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        new_status = self.request.data.get('status')
+
+        if new_status == 'accepted':
+            serializer.save()
+            try:
+                send_shipment_request_accepted(instance)
+            except Exception:
+                pass
+        else:
+            serializer.save()

@@ -141,3 +141,48 @@ def send_statement_ready(statement):
         })
     except Exception as e:
         print(f"Email error: {e}")
+
+def send_shipment_request_accepted(shipment_request):
+    try:
+        items_html = ''.join([
+            f'<tr><td>{item.product.name_ar}</td><td>{item.product.product_code}</td><td>{item.cartons_count}</td><td>{item.total_units}</td></tr>'
+            for item in shipment_request.items.all()
+        ])
+
+        delivery_methods = {
+            'pickup': 'استلام بواسطة وكالة',
+            'courier': 'شركة شحن',
+            'drop_off': 'تسليم في مقر وكالة',
+        }
+        method_label = delivery_methods.get(shipment_request.delivery_method, shipment_request.delivery_method)
+
+        resend.Emails.send({
+            'from': FROM_EMAIL,
+            'to': shipment_request.seller.user.email,
+            'subject': f'تم قبول طلب الشحن {shipment_request.request_number} ✅',
+            'html': f'''
+                <div dir="rtl">
+                    <h2>مرحباً {shipment_request.seller.full_name}،</h2>
+                    <p>تم قبول طلب الشحن الخاص بك.</p>
+                    <p><strong>رقم الطلب:</strong> {shipment_request.request_number}</p>
+                    <p><strong>موعد التسليم:</strong> {shipment_request.delivery_date}</p>
+                    <p><strong>طريقة التسليم:</strong> {method_label}</p>
+                    {f'<p><strong>ملاحظات:</strong> {shipment_request.delivery_notes}</p>' if shipment_request.delivery_notes else ''}
+                    <br>
+                    <h3>المنتجات:</h3>
+                    <table border="1" cellpadding="8" style="border-collapse:collapse;width:100%">
+                        <tr>
+                            <th>المنتج</th>
+                            <th>الكود</th>
+                            <th>عدد الكراتين</th>
+                            <th>إجمالي الوحدات</th>
+                        </tr>
+                        {items_html}
+                    </table>
+                    <br>
+                    <p>فريق وكالة</p>
+                </div>
+            '''
+        })
+    except Exception as e:
+        print(f"Email error: {e}")

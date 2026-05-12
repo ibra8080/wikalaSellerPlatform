@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import VariantInventory, InboundShipmentUpdate
+from .models import VariantInventory, InboundShipmentUpdate, ShipmentRequest, ShipmentRequestItem
 
 
 class VariantInventorySerializer(serializers.ModelSerializer):
@@ -33,3 +33,49 @@ class InboundShipmentUpdateSerializer(serializers.ModelSerializer):
             'id', 'updated_by', 'updated_by_email',
             'from_status', 'created_at'
         )
+
+
+class ShipmentRequestItemSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.name_en', read_only=True)
+    product_code = serializers.CharField(source='product.product_code', read_only=True)
+
+    class Meta:
+        model = ShipmentRequestItem
+        fields = (
+            'id', 'product', 'product_name', 'product_code',
+            'cartons_count', 'units_per_carton', 'total_units',
+            'carton_weight_kg', 'carton_length_cm',
+            'carton_width_cm', 'carton_height_cm',
+        )
+        read_only_fields = (
+            'units_per_carton', 'total_units',
+            'carton_weight_kg', 'carton_length_cm',
+            'carton_width_cm', 'carton_height_cm',
+        )
+
+
+class ShipmentRequestSerializer(serializers.ModelSerializer):
+    items = ShipmentRequestItemSerializer(many=True, required=False)
+    seller_name = serializers.CharField(source='seller.business_name', read_only=True)
+
+    class Meta:
+        model = ShipmentRequest
+        fields = (
+            'id', 'request_number', 'seller', 'seller_name',
+            'requested_date', 'status', 'notes',
+            'delivery_date', 'delivery_method', 'delivery_notes',
+            'created_at', 'updated_at', 'items',
+        )
+        read_only_fields = (
+            'id', 'request_number', 'seller', 'seller_name',
+            'delivery_date', 'delivery_method', 'delivery_notes',
+            'created_at', 'updated_at',
+        )
+
+    def create(self, validated_data):
+        items_data = validated_data.pop('items', [])
+        seller = self.context['request'].user.seller_profile
+        shipment = ShipmentRequest.objects.create(seller=seller, **validated_data)
+        for item in items_data:
+            ShipmentRequestItem.objects.create(shipment_request=shipment, **item)
+        return shipment
