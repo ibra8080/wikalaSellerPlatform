@@ -72,7 +72,6 @@ class ShipmentRequestSerializer(serializers.ModelSerializer):
         read_only_fields = (
             'id', 'request_number', 'seller', 'seller_name',
             'request_date',
-            'delivery_date', 'delivery_notes',
             'created_at', 'updated_at',
         )
 
