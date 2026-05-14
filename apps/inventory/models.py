@@ -59,20 +59,33 @@ class ShipmentRequest(models.Model):
         related_name='shipment_requests'
     )
     request_number = models.CharField(max_length=20, unique=True, blank=True)
-    requested_date = models.DateField()
+    request_date = models.DateField(auto_now_add=True)
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
         default=Status.DRAFT
     )
     notes = models.TextField(blank=True)
-    delivery_date = models.DateField(null=True, blank=True)
+
+    # Availability
+    available_from = models.DateField(null=True, blank=True)
+
+    # Delivery
     delivery_method = models.CharField(
         max_length=20,
         choices=DeliveryMethod.choices,
         blank=True
     )
+    delivery_address = models.TextField(blank=True)
+
+    # Contact
+    contact_person = models.CharField(max_length=100, blank=True)
+    contact_number = models.CharField(max_length=20, blank=True)
+
+    # Admin fields (filled upon acceptance)
+    delivery_date = models.DateField(null=True, blank=True)
     delivery_notes = models.TextField(blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -29,7 +29,7 @@ class ShipmentRequestItemInline(admin.TabularInline):
 
 @admin.register(ShipmentRequest)
 class ShipmentRequestAdmin(admin.ModelAdmin):
-    list_display = ('request_number', 'seller', 'status', 'requested_date',
+    list_display = ('request_number', 'seller', 'status', 'request_date',
                     'delivery_date', 'delivery_method', 'created_at')
     list_filter = ('status', 'delivery_method')
     search_fields = ('request_number', 'seller__business_name')
