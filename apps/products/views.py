@@ -161,3 +161,32 @@ class ProductImageUploadView(APIView):
             ProductImageSerializer(image).data,
             status=status.HTTP_201_CREATED
         )
+
+
+class ProductVariantDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ProductVariantSerializer
+    permission_classes = [permissions.IsAuthenticated, IsSeller]
+
+    def get_queryset(self):
+        return ProductVariant.objects.filter(
+            product__id=self.kwargs['pk'],
+            product__seller=self.request.user.seller_profile
+        )
+
+    def get_object(self):
+        return ProductVariant.objects.get(
+            id=self.kwargs['variant_pk'],
+            product__id=self.kwargs['pk'],
+            product__seller=self.request.user.seller_profile
+        )
+
+
+class ProductImageDeleteView(generics.DestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated, IsSeller]
+
+    def get_object(self):
+        return ProductImage.objects.get(
+            id=self.kwargs['image_pk'],
+            product__id=self.kwargs['pk'],
+            product__seller=self.request.user.seller_profile
+        )
