@@ -11,6 +11,7 @@ class VariantInventory(models.Model):
     quantity_in_transit = models.IntegerField(default=0)
     quantity_in_germany = models.IntegerField(default=0)
     quantity_sold = models.IntegerField(default=0)
+    arrived_germany_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

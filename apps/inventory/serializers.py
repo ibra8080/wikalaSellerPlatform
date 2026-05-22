@@ -12,9 +12,9 @@ class VariantInventorySerializer(serializers.ModelSerializer):
             'id', 'variant', 'variant_sku',
             'quantity_in_egypt', 'quantity_in_transit',
             'quantity_in_germany', 'quantity_sold',
-            'quantity_available', 'updated_at'
+            'quantity_available', 'arrived_germany_at', 'updated_at'
         )
-        read_only_fields = ('id', 'variant', 'variant_sku', 'updated_at')
+        read_only_fields = ('id', 'variant', 'variant_sku', 'arrived_germany_at', 'updated_at')
 
 
 class InboundShipmentUpdateSerializer(serializers.ModelSerializer):
