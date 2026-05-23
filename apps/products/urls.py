@@ -6,6 +6,7 @@ from .views import (
     ProductVariantView, ProductPromotionView,
     ProductImageUploadView,
     ProductVariantDetailView, ProductImageDeleteView,
+    AdminProductDeleteView,
 )
 
 urlpatterns = [
@@ -23,4 +24,5 @@ urlpatterns = [
     # Admin
     path('admin/list/', AdminProductListView.as_view(), name='admin-product-list'),
     path('admin/<int:pk>/', AdminProductDetailView.as_view(), name='admin-product-detail'),
+    path('admin/<int:pk>/delete/', AdminProductDeleteView.as_view(), name='admin-product-delete'),
 ]

@@ -190,3 +190,8 @@ class ProductImageDeleteView(generics.DestroyAPIView):
             product__id=self.kwargs['pk'],
             product__seller=self.request.user.seller_profile
         )
+
+
+class AdminProductDeleteView(generics.DestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    queryset = Product.objects.all()
