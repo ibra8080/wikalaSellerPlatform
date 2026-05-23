@@ -31,6 +31,7 @@ class Product(models.Model):
         IN_TRANSIT = 'in_transit', 'In Transit'
         IN_WAREHOUSE_GERMANY = 'in_warehouse_germany', 'In Warehouse Germany'
         LISTED = 'listed', 'Listed'
+        SUSPENDED = 'suspended', 'Suspended'
 
     seller = models.ForeignKey(
         SellerProfile, on_delete=models.CASCADE, related_name='products'

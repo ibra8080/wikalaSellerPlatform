@@ -54,6 +54,11 @@ class ShipmentRequest(models.Model):
         COURIER = 'courier', 'Courier'
         DROP_OFF = 'drop_off', 'Drop Off at Wikala'
 
+    class ExecutionStatus(models.TextChoices):
+        IN_PROGRESS = 'in_progress', 'In Progress'
+        COMPLETED = 'completed', 'Completed'
+        ISSUE = 'issue', 'Issue'
+
     seller = models.ForeignKey(
         'sellers.SellerProfile',
         on_delete=models.CASCADE,
@@ -84,6 +89,13 @@ class ShipmentRequest(models.Model):
     contact_number = models.CharField(max_length=20, blank=True)
 
     # Admin fields (filled upon acceptance)
+    execution_status = models.CharField(
+        max_length=20,
+        choices=ExecutionStatus.choices,
+        blank=True,
+        default=''
+    )
+    issue_note = models.TextField(blank=True)
     delivery_date = models.DateField(null=True, blank=True)
     delivery_notes = models.TextField(blank=True)
 

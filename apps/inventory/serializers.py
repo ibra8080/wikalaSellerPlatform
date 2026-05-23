@@ -66,6 +66,7 @@ class ShipmentRequestSerializer(serializers.ModelSerializer):
             'available_from',
             'delivery_method', 'delivery_address',
             'contact_person', 'contact_number',
+            'execution_status', 'issue_note',
             'delivery_date', 'delivery_notes',
             'created_at', 'updated_at', 'items',
         )
