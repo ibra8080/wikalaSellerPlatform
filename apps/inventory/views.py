@@ -52,9 +52,9 @@ class AdminShipmentUpdateView(generics.CreateAPIView):
         if to_status == 'in_warehouse_germany':
             from apps.inventory.models import VariantInventory
             for variant in product.variants.all():
-                VariantInventory.objects.filter(variant=variant).update(
-                    arrived_germany_at=timezone.now()
-                )
+                inv, created = VariantInventory.objects.get_or_create(variant=variant)
+                inv.arrived_germany_at = timezone.now()
+                inv.save()
 
         send_shipment_updated(product, to_status)
 
