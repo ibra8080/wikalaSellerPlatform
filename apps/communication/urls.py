@@ -2,13 +2,15 @@ from django.urls import path
 from .views import (
     ConversationListCreateView, ConversationDetailView, MessageCreateView,
     IssueListCreateView, IssueDetailView, IssueMessageCreateView,
-    NotificationListView, NotificationMarkReadView
+    NotificationListView, NotificationMarkReadView,
+    ConversationMarkReadView,
 )
 
 urlpatterns = [
     # Conversations
     path('conversations/', ConversationListCreateView.as_view(), name='conversation-list'),
     path('conversations/<int:pk>/', ConversationDetailView.as_view(), name='conversation-detail'),
+    path('conversations/<int:pk>/read/', ConversationMarkReadView.as_view(), name='conversation-read'),
     path('conversations/<int:pk>/messages/', MessageCreateView.as_view(), name='message-create'),
 
     # Issues

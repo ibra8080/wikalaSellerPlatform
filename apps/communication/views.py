@@ -111,3 +111,15 @@ class NotificationMarkReadView(APIView):
         notification.is_read = True
         notification.save()
         return Response({'status': 'marked as read'})
+
+
+class ConversationMarkReadView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        conversation = Conversation.objects.get(id=pk)
+        Message.objects.filter(
+            conversation=conversation,
+            is_read=False
+        ).exclude(sender=request.user).update(is_read=True)
+        return Response({'status': 'marked as read'})
