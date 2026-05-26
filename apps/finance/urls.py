@@ -4,7 +4,8 @@ from .views import (
     SellerStatementListView, SellerStatementDetailView,
     SaleRecordListView,
     AdminStatementListView, AdminStatementDetailView,
-    AdminSaleRecordCreateView
+    AdminSaleRecordCreateView,
+    StatementCalculateView,
 )
 
 urlpatterns = [
@@ -19,5 +20,6 @@ urlpatterns = [
     # Admin
     path('admin/statements/', AdminStatementListView.as_view(), name='admin-statement-list'),
     path('admin/statements/<int:pk>/', AdminStatementDetailView.as_view(), name='admin-statement-detail'),
+    path('admin/statements/calculate/', StatementCalculateView.as_view(), name='statement-calculate'),
     path('admin/sales/', AdminSaleRecordCreateView.as_view(), name='admin-sale-create'),
 ]
