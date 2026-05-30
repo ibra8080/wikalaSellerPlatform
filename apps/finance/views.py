@@ -1,8 +1,16 @@
 from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import FeeStructure, SellerStatement, SaleRecord
-from .serializers import FeeStructureSerializer, SellerStatementSerializer, SaleRecordSerializer
+from .models import (
+    FeeStructure, SellerStatement, SaleRecord,
+    WebService, DiscountCode, SellerDiscountCode,
+    SellerDiscount, WebServiceCharge
+)
+from .serializers import (
+    FeeStructureSerializer, SellerStatementSerializer, SaleRecordSerializer,
+    WebServiceSerializer, DiscountCodeSerializer, SellerDiscountCodeSerializer,
+    SellerDiscountSerializer, WebServiceChargeSerializer
+)
 from apps.sellers.views import IsSeller, IsAdmin
 from apps.inventory.models import VariantInventory
 from apps.products.models import Product
@@ -210,3 +218,211 @@ class StatementCalculateView(APIView):
             'breakdown':           breakdown,
             'shipping_detail':     shipping_detail,
         })
+
+# ── WebService ────────────────────────────────────────────────────────────────
+
+class WebServiceListView(generics.ListAPIView):
+    """Seller: يشوف الخدمات المتاحة"""
+    serializer_class = WebServiceSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = WebService.objects.filter(is_active=True)
+
+
+class AdminWebServiceListCreateView(generics.ListCreateAPIView):
+    """Admin: يدير الخدمات"""
+    serializer_class = WebServiceSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    queryset = WebService.objects.all().order_by('-created_at')
+
+
+class AdminWebServiceDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """Admin: يعدل أو يحذف خدمة"""
+    serializer_class = WebServiceSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    queryset = WebService.objects.all()
+
+
+# ── DiscountCode ──────────────────────────────────────────────────────────────
+
+class AdminDiscountCodeListCreateView(generics.ListCreateAPIView):
+    """Admin: يدير أكواد الخصم"""
+    serializer_class = DiscountCodeSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    queryset = DiscountCode.objects.all().order_by('-created_at')
+
+
+class AdminDiscountCodeDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """Admin: يعدل أو يحذف كود"""
+    serializer_class = DiscountCodeSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    queryset = DiscountCode.objects.all()
+
+
+class ApplyDiscountCodeView(APIView):
+    """Seller: يطبق كود خصم"""
+    permission_classes = [permissions.IsAuthenticated, IsSeller]
+
+    def post(self, request):
+        code_str = request.data.get('code', '').strip().upper()
+        if not code_str:
+            return Response(
+                {'error': 'Code is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            code = DiscountCode.objects.get(code=code_str)
+        except DiscountCode.DoesNotExist:
+            return Response(
+                {'error': 'Invalid code'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if not code.is_valid():
+            return Response(
+                {'error': 'Code is expired or inactive'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        seller = request.user.seller_profile
+
+        # تحقق مش استخدمه قبل كده
+        if SellerDiscountCode.objects.filter(seller=seller, code=code).exists():
+            return Response(
+                {'error': 'You have already used this code'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # طبق الكود
+        SellerDiscountCode.objects.create(seller=seller, code=code)
+        code.used_count += 1
+        code.save()
+
+        return Response({
+            'success': True,
+            'message': f'Code "{code.code}" applied successfully',
+            'discount_type': code.discount_type,
+            'value': float(code.value),
+            'applies_to': code.applies_to,
+        })
+
+
+class SellerActiveCodesView(generics.ListAPIView):
+    """Seller: يشوف الأكواد المطبقة عليه"""
+    serializer_class = SellerDiscountCodeSerializer
+    permission_classes = [permissions.IsAuthenticated, IsSeller]
+
+    def get_queryset(self):
+        return SellerDiscountCode.objects.filter(
+            seller=self.request.user.seller_profile
+        ).select_related('code')
+
+
+# ── SellerDiscount ────────────────────────────────────────────────────────────
+
+class AdminSellerDiscountListCreateView(generics.ListCreateAPIView):
+    """Admin: يضيف خصم مباشر على بائع"""
+    serializer_class = SellerDiscountSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    queryset = SellerDiscount.objects.all().order_by('-created_at')
+
+
+class AdminSellerDiscountDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """Admin: يعدل أو يحذف خصم مباشر"""
+    serializer_class = SellerDiscountSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    queryset = SellerDiscount.objects.all()
+
+
+# ── WebServiceCharge ──────────────────────────────────────────────────────────
+
+class SellerChargesListView(generics.ListAPIView):
+    """Seller: يشوف فواتير الخدمات بتاعته"""
+    serializer_class = WebServiceChargeSerializer
+    permission_classes = [permissions.IsAuthenticated, IsSeller]
+
+    def get_queryset(self):
+        return WebServiceCharge.objects.filter(
+            seller=self.request.user.seller_profile
+        ).order_by('-created_at')
+
+
+class AdminChargesListCreateView(generics.ListCreateAPIView):
+    """Admin: يدير فواتير الخدمات"""
+    serializer_class = WebServiceChargeSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    queryset = WebServiceCharge.objects.all().order_by('-created_at')
+
+
+class AdminChargeDetailView(generics.RetrieveUpdateAPIView):
+    """Admin: يعدل فاتورة (مثلاً يغير status لـ paid)"""
+    serializer_class = WebServiceChargeSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    queryset = WebServiceCharge.objects.all()
+
+
+class AdminCreateRegistrationChargeView(APIView):
+    """Admin: ينشئ فاتورة تسجيل على بائع تلقائياً"""
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+
+    def post(self, request, seller_id):
+        from apps.sellers.models import SellerProfile
+
+        try:
+            seller = SellerProfile.objects.get(id=seller_id)
+        except SellerProfile.DoesNotExist:
+            return Response({'error': 'Seller not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # جيب خدمة التسجيل
+        try:
+            service = WebService.objects.get(type='one_time', mandatory=True, is_active=True)
+        except WebService.DoesNotExist:
+            return Response({'error': 'Registration service not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # تحقق مش عنده فاتورة تسجيل قبل كده
+        if WebServiceCharge.objects.filter(seller=seller, service=service).exists():
+            return Response({'error': 'Registration charge already exists'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # احسب الخصم
+        original_price  = service.price
+        discount_amount = Decimal('0')
+
+        # خصم مباشر من الأدمن
+        direct_discount = SellerDiscount.objects.filter(
+            seller=seller, service=service, is_active=True
+        ).first()
+        if direct_discount:
+            if direct_discount.discount_type == 'percent':
+                discount_amount = original_price * direct_discount.value / 100
+            else:
+                discount_amount = direct_discount.value
+
+        # كود خصم
+        code_usage = SellerDiscountCode.objects.filter(
+            seller=seller,
+            code__applies_to__in=['all', 'specific'],
+        ).filter(
+            code__is_active=True
+        ).select_related('code').first()
+
+        if code_usage and code_usage.code.is_valid():
+            code = code_usage.code
+            if code.applies_to == 'all' or code.service == service:
+                if code.discount_type == 'percent':
+                    code_discount = original_price * code.value / 100
+                else:
+                    code_discount = code.value
+                discount_amount = max(discount_amount, code_discount)
+
+        final_price = max(Decimal('0'), original_price - discount_amount)
+
+        charge = WebServiceCharge.objects.create(
+            seller=seller,
+            service=service,
+            original_price=original_price,
+            discount_amount=discount_amount,
+            final_price=final_price,
+            status='waived' if final_price == 0 else 'pending',
+        )
+
+        return Response(WebServiceChargeSerializer(charge).data, status=status.HTTP_201_CREATED)
