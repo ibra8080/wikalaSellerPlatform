@@ -42,13 +42,6 @@ class SellerStatementSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ('id', 'seller_name', 'created_at')
 
-from .models import (
-    FeeStructure, SellerStatement, SaleRecord,
-    WebService, DiscountCode, SellerDiscountCode,
-    SellerDiscount, WebServiceCharge
-)
-
-
 class WebServiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = WebService
