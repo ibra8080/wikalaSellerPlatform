@@ -90,9 +90,18 @@ class WebService(models.Model):
         MONTHLY  = 'monthly', 'Monthly'
         EVENT    = 'event', 'Event'
 
+    class ServiceLevel(models.TextChoices):
+        SELLER  = 'seller',  'Seller Level'
+        PRODUCT = 'product', 'Product Level'
+
     name        = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     type        = models.CharField(max_length=10, choices=ServiceType.choices)
+    level       = models.CharField(
+        max_length=10,
+        choices=ServiceLevel.choices,
+        default=ServiceLevel.SELLER
+    )
     price       = models.DecimalField(max_digits=8, decimal_places=2)
     mandatory   = models.BooleanField(default=False)
     is_active   = models.BooleanField(default=True)
@@ -212,6 +221,12 @@ class WebServiceCharge(models.Model):
     final_price     = models.DecimalField(max_digits=8, decimal_places=2)
     status          = models.CharField(
         max_length=10, choices=Status.choices, default=Status.PENDING
+    )
+    product         = models.ForeignKey(
+        'products.Product',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='service_charges'
     )
     period_month    = models.IntegerField(null=True, blank=True)
     period_year     = models.IntegerField(null=True, blank=True)
