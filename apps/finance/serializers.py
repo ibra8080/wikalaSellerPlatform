@@ -46,7 +46,7 @@ class WebServiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = WebService
         fields = (
-            'id', 'name', 'description', 'type',
+            'id', 'name', 'description', 'type', 'level',
             'price', 'mandatory', 'is_active', 'created_at'
         )
         read_only_fields = ('id', 'created_at')
@@ -94,14 +94,17 @@ class SellerDiscountSerializer(serializers.ModelSerializer):
 
 
 class WebServiceChargeSerializer(serializers.ModelSerializer):
-    service_name = serializers.CharField(source='service.name', read_only=True)
-    seller_name  = serializers.CharField(source='seller.business_name', read_only=True)
+    service_name  = serializers.CharField(source='service.name', read_only=True)
+    service_level = serializers.CharField(source='service.level', read_only=True)
+    seller_name   = serializers.CharField(source='seller.business_name', read_only=True)
+    product_name  = serializers.CharField(source='product.name_en', read_only=True, allow_null=True)
 
     class Meta:
         model = WebServiceCharge
         fields = (
-            'id', 'seller', 'seller_name', 'service', 'service_name',
+            'id', 'seller', 'seller_name', 'service', 'service_name', 'service_level',
+            'product', 'product_name',
             'statement', 'original_price', 'discount_amount', 'final_price',
             'status', 'period_month', 'period_year', 'notes', 'created_at'
         )
-        read_only_fields = ('id', 'seller_name', 'service_name', 'created_at')
+        read_only_fields = ('id', 'seller_name', 'service_name', 'service_level', 'product_name', 'created_at')
