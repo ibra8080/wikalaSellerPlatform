@@ -1,6 +1,8 @@
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
 from .models import Conversation, Message, Issue, IssueMessage, Notification
 from .serializers import (
     ConversationSerializer, MessageSerializer,
@@ -10,7 +12,10 @@ from apps.sellers.views import IsSeller, IsAdmin
 import django.utils.timezone as timezone
 
 
+# ──────────────────────────────────────
 # Conversations
+# ──────────────────────────────────────
+
 class ConversationListCreateView(generics.ListCreateAPIView):
     serializer_class = ConversationSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -43,11 +48,22 @@ class MessageCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        conversation = Conversation.objects.get(id=self.kwargs['pk'])
-        serializer.save(sender=self.request.user, conversation=conversation)
+        conversation = get_object_or_404(Conversation, id=self.kwargs['pk'])
+
+        # Authorization: only the conversation owner or admin can send messages
+        user = self.request.user
+        if user.role != 'admin' and conversation.seller != user.seller_profile:
+            raise PermissionDenied(
+                'You do not have permission to send messages in this conversation.'
+            )
+
+        serializer.save(sender=user, conversation=conversation)
 
 
+# ──────────────────────────────────────
 # Issues
+# ──────────────────────────────────────
+
 class IssueListCreateView(generics.ListCreateAPIView):
     serializer_class = IssueSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -86,11 +102,22 @@ class IssueMessageCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        issue = Issue.objects.get(id=self.kwargs['pk'])
-        serializer.save(sender=self.request.user, issue=issue)
+        issue = get_object_or_404(Issue, id=self.kwargs['pk'])
+
+        # Authorization: only the issue owner or admin can send messages
+        user = self.request.user
+        if user.role != 'admin' and issue.seller != user.seller_profile:
+            raise PermissionDenied(
+                'You do not have permission to send messages on this issue.'
+            )
+
+        serializer.save(sender=user, issue=issue)
 
 
+# ──────────────────────────────────────
 # Notifications
+# ──────────────────────────────────────
+
 class NotificationListView(generics.ListAPIView):
     serializer_class = NotificationSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -105,21 +132,9 @@ class NotificationMarkReadView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
-        notification = Notification.objects.get(
-            id=pk, user=request.user
+        notification = get_object_or_404(
+            Notification, id=pk, user=request.user
         )
         notification.is_read = True
         notification.save()
-        return Response({'status': 'marked as read'})
-
-
-class ConversationMarkReadView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request, pk):
-        conversation = Conversation.objects.get(id=pk)
-        Message.objects.filter(
-            conversation=conversation,
-            is_read=False
-        ).exclude(sender=request.user).update(is_read=True)
         return Response({'status': 'marked as read'})
