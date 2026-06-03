@@ -60,6 +60,19 @@ class MessageCreateView(generics.CreateAPIView):
         serializer.save(sender=user, conversation=conversation)
 
 
+class ConversationMarkReadView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        conversation = get_object_or_404(Conversation, id=pk)
+
+        if request.user.role != 'admin' and conversation.seller != request.user.seller_profile:
+            raise PermissionDenied()
+
+        conversation.messages.exclude(sender=request.user).update(is_read=True)
+        return Response({'status': 'messages marked as read'})
+
+
 # ──────────────────────────────────────
 # Issues
 # ──────────────────────────────────────

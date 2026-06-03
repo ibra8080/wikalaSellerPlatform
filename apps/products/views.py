@@ -23,15 +23,6 @@ SELLER_PROTECTED_FIELDS = {'status', 'rejection_reason', 'previous_status',
 # Fields that trigger re-review when changed on an active product
 NEEDS_REVIEW_FIELDS = {'price', 'name_ar', 'name_en', 'name_de'}
 
-# Valid status transitions for shipment updates
-VALID_STATUS_TRANSITIONS = {
-    'approved': ['awaiting_seller_shipment'],
-    'awaiting_seller_shipment': ['in_warehouse_egypt'],
-    'in_warehouse_egypt': ['in_transit'],
-    'in_transit': ['in_warehouse_germany'],
-    'in_warehouse_germany': ['listed'],
-}
-
 
 class CategoryListView(generics.ListAPIView):
     serializer_class = CategorySerializer
@@ -129,6 +120,12 @@ class AdminProductDetailView(generics.RetrieveUpdateAPIView):
             serializer.save()
 
 
+class AdminProductDeleteView(generics.DestroyAPIView):
+    serializer_class = ProductSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    queryset = Product.objects.all()
+
+
 # ──────────────────────────────────────
 # Seller: Product Variants
 # ──────────────────────────────────────
@@ -150,6 +147,19 @@ class ProductVariantView(generics.ListCreateAPIView):
             seller=self.request.user.seller_profile
         )
         serializer.save(product=product)
+
+
+class ProductVariantDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ProductVariantSerializer
+    permission_classes = [permissions.IsAuthenticated, IsSeller]
+
+    def get_object(self):
+        return get_object_or_404(
+            ProductVariant,
+            id=self.kwargs['variant_pk'],
+            product__id=self.kwargs['pk'],
+            product__seller=self.request.user.seller_profile
+        )
 
 
 # ──────────────────────────────────────
@@ -202,4 +212,16 @@ class ProductImageUploadView(APIView):
         return Response(
             ProductImageSerializer(image).data,
             status=status.HTTP_201_CREATED
+        )
+
+
+class ProductImageDeleteView(generics.DestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated, IsSeller]
+
+    def get_object(self):
+        return get_object_or_404(
+            ProductImage,
+            id=self.kwargs['image_pk'],
+            product__id=self.kwargs['pk'],
+            product__seller=self.request.user.seller_profile
         )

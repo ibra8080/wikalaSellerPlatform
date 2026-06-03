@@ -2,8 +2,8 @@ from rest_framework import generics, permissions
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import VariantInventory, InboundShipmentUpdate
-from .serializers import VariantInventorySerializer, InboundShipmentUpdateSerializer
+from .models import VariantInventory, InboundShipmentUpdate, ShipmentRequest
+from .serializers import VariantInventorySerializer, InboundShipmentUpdateSerializer, ShipmentRequestSerializer
 from apps.sellers.views import IsSeller, IsAdmin
 from apps.products.models import Product
 from utils.email import send_shipment_updated
@@ -78,3 +78,39 @@ class AdminInventoryDetailView(generics.RetrieveUpdateAPIView):
     serializer_class = VariantInventorySerializer
     permission_classes = [permissions.IsAuthenticated, IsAdmin]
     queryset = VariantInventory.objects.all()
+
+
+# ── Seller: Shipment Requests ──
+
+class ShipmentRequestListCreateView(generics.ListCreateAPIView):
+    serializer_class = ShipmentRequestSerializer
+    permission_classes = [permissions.IsAuthenticated, IsSeller]
+
+    def get_queryset(self):
+        return ShipmentRequest.objects.filter(
+            seller=self.request.user.seller_profile
+        ).order_by('-created_at')
+
+
+class ShipmentRequestDetailView(generics.RetrieveAPIView):
+    serializer_class = ShipmentRequestSerializer
+    permission_classes = [permissions.IsAuthenticated, IsSeller]
+
+    def get_queryset(self):
+        return ShipmentRequest.objects.filter(
+            seller=self.request.user.seller_profile
+        )
+
+
+# ── Admin: Shipment Requests ──
+
+class AdminShipmentRequestListView(generics.ListAPIView):
+    serializer_class = ShipmentRequestSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    queryset = ShipmentRequest.objects.all().order_by('-created_at')
+
+
+class AdminShipmentRequestDetailView(generics.RetrieveUpdateAPIView):
+    serializer_class = ShipmentRequestSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    queryset = ShipmentRequest.objects.all()
