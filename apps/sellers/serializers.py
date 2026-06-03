@@ -27,7 +27,15 @@ class SellerRegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = self.context['request'].user
-        return SellerProfile.objects.create(user=user, **validated_data)
+        profile, created = SellerProfile.objects.get_or_create(
+            user=user,
+            defaults=validated_data
+        )
+        if not created:
+            for attr, value in validated_data.items():
+                setattr(profile, attr, value)
+            profile.save()
+        return profile
 
 
 class SellerDocumentSerializer(serializers.ModelSerializer):
