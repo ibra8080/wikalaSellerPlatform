@@ -85,11 +85,15 @@ class Issue(models.Model):
         return f"{self.issue_number} — {self.title}"
 
     def save(self, *args, **kwargs):
-        if not self.issue_number:
-            last = Issue.objects.order_by('-id').first()
-            next_id = (last.id + 1) if last else 1
-            self.issue_number = f"WK-ISS-{next_id:04d}"
-        super().save(*args, **kwargs)
+        # FIX: Use self.pk after first save to avoid race condition
+        is_new = not self.pk
+        if is_new:
+            super().save(*args, **kwargs)
+            if not self.issue_number:
+                self.issue_number = f"WK-ISS-{self.pk:04d}"
+                super().save(update_fields=['issue_number'])
+        else:
+            super().save(*args, **kwargs)
 
 
 class IssueMessage(models.Model):

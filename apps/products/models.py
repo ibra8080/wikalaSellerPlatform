@@ -31,7 +31,6 @@ class Product(models.Model):
         IN_TRANSIT = 'in_transit', 'In Transit'
         IN_WAREHOUSE_GERMANY = 'in_warehouse_germany', 'In Warehouse Germany'
         LISTED = 'listed', 'Listed'
-        SUSPENDED = 'suspended', 'Suspended'
 
     seller = models.ForeignKey(
         SellerProfile, on_delete=models.CASCADE, related_name='products'
@@ -64,9 +63,6 @@ class Product(models.Model):
         null=True, related_name='products'
     )
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    production_cost = models.DecimalField(
-        max_digits=10, decimal_places=2, null=True, blank=True
-    )
 
     # Unit dimensions
     unit_weight_kg = models.DecimalField(
@@ -117,15 +113,20 @@ class Product(models.Model):
     def save(self, *args, **kwargs):
         if not self.product_code:
             self.product_code = None
+
+        # FIX: Generate product_code using self.pk to avoid race condition
         if self.product_code is None and self.status == self.Status.APPROVED:
+            # Ensure saved first to get pk
+            if not self.pk:
+                super().save(*args, **kwargs)
+                args = ()
+                kwargs = {}
+
             seller_num = self.seller.seller_id.replace('WK-', '')
             random.seed(time.time_ns())
             random_part = random.randint(100, 999)
-            count = Product.objects.filter(
-                seller=self.seller,
-                status=self.Status.APPROVED
-            ).count() + 1
-            self.product_code = f"WKP{seller_num}{random_part}{count:03d}"
+            self.product_code = f"WKP{seller_num}{random_part}{self.pk:03d}"
+
         super().save(*args, **kwargs)
 
 
@@ -165,11 +166,16 @@ class ProductVariant(models.Model):
     def save(self, *args, **kwargs):
         if not self.sku:
             self.sku = None
+
+        # FIX: Use self.pk after save to guarantee unique SKU
         if self.sku is None and self.product.product_code:
-            variant_num = ProductVariant.objects.filter(
-                product=self.product
-            ).count() + 1
-            self.sku = f"{self.product.product_code}{variant_num:03d}"
+            if not self.pk:
+                super().save(*args, **kwargs)
+                args = ()
+                kwargs = {}
+
+            self.sku = f"{self.product.product_code}{self.pk:03d}"
+
         super().save(*args, **kwargs)
 
 
