@@ -2,6 +2,8 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.exceptions import ValidationError
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from .models import Product, ProductVariant, ProductImage, Certification, ProductPromotion, Category
 from .serializers import (
@@ -14,13 +16,33 @@ from utils.cloudinary import upload_image
 from utils.email import send_product_approved, send_product_rejected
 
 
+# Fields that a seller is NOT allowed to change directly
+SELLER_PROTECTED_FIELDS = {'status', 'rejection_reason', 'previous_status',
+                           'shopify_product_id', 'approved_at', 'listed_at'}
+
+# Fields that trigger re-review when changed on an active product
+NEEDS_REVIEW_FIELDS = {'price', 'name_ar', 'name_en', 'name_de'}
+
+# Valid status transitions for shipment updates
+VALID_STATUS_TRANSITIONS = {
+    'approved': ['awaiting_seller_shipment'],
+    'awaiting_seller_shipment': ['in_warehouse_egypt'],
+    'in_warehouse_egypt': ['in_transit'],
+    'in_transit': ['in_warehouse_germany'],
+    'in_warehouse_germany': ['listed'],
+}
+
+
 class CategoryListView(generics.ListAPIView):
     serializer_class = CategorySerializer
     permission_classes = [permissions.IsAuthenticated]
     queryset = Category.objects.filter(parent=None)
 
 
-# Seller: list and create products
+# ──────────────────────────────────────
+# Seller: Products
+# ──────────────────────────────────────
+
 class ProductListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated, IsSeller]
 
@@ -35,7 +57,6 @@ class ProductListCreateView(generics.ListCreateAPIView):
         ).order_by('-created_at')
 
 
-# Seller: view/update a specific product
 class ProductDetailView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated, IsSeller]
     serializer_class = ProductSerializer
@@ -47,8 +68,13 @@ class ProductDetailView(generics.RetrieveUpdateAPIView):
         instance = self.get_object()
         data = self.request.data
 
-        needs_review_fields = {'price', 'name_ar', 'name_en', 'name_de'}
-        has_sensitive_change = bool(needs_review_fields & set(data.keys()))
+        # Strip protected fields — seller cannot change these
+        for field in SELLER_PROTECTED_FIELDS:
+            if field in data:
+                data.pop(field, None)
+
+        # Check if seller is editing a sensitive field on an active product
+        has_sensitive_change = bool(NEEDS_REVIEW_FIELDS & set(data.keys()))
 
         active_statuses = [
             'approved', 'listed', 'in_warehouse_germany',
@@ -64,14 +90,16 @@ class ProductDetailView(generics.RetrieveUpdateAPIView):
             serializer.save()
 
 
-# Admin: list all products
+# ──────────────────────────────────────
+# Admin: Products
+# ──────────────────────────────────────
+
 class AdminProductListView(generics.ListAPIView):
     serializer_class = ProductSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdmin]
     queryset = Product.objects.all().order_by('-created_at')
 
 
-# Admin: view/update any product (approve/reject)
 class AdminProductDetailView(generics.RetrieveUpdateAPIView):
     serializer_class = ProductSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdmin]
@@ -82,12 +110,14 @@ class AdminProductDetailView(generics.RetrieveUpdateAPIView):
         new_status = self.request.data.get('status')
 
         if new_status == 'approved' and instance.previous_status:
+            # Re-approving after re-review: restore previous status
             serializer.save(
                 status=instance.previous_status,
                 previous_status=''
             )
             send_product_approved(instance)
         elif new_status == 'approved' and not instance.previous_status:
+            # First-time approval
             instance_updated = serializer.save(status='approved')
             instance_updated.approved_at = timezone.now()
             instance_updated.save()
@@ -99,7 +129,10 @@ class AdminProductDetailView(generics.RetrieveUpdateAPIView):
             serializer.save()
 
 
-# Seller: manage product variants
+# ──────────────────────────────────────
+# Seller: Product Variants
+# ──────────────────────────────────────
+
 class ProductVariantView(generics.ListCreateAPIView):
     serializer_class = ProductVariantSerializer
     permission_classes = [permissions.IsAuthenticated, IsSeller]
@@ -111,14 +144,18 @@ class ProductVariantView(generics.ListCreateAPIView):
         )
 
     def perform_create(self, serializer):
-        product = Product.objects.get(
+        product = get_object_or_404(
+            Product,
             id=self.kwargs['pk'],
             seller=self.request.user.seller_profile
         )
         serializer.save(product=product)
 
 
-# Seller: manage promotions on their products
+# ──────────────────────────────────────
+# Seller: Product Promotions
+# ──────────────────────────────────────
+
 class ProductPromotionView(generics.ListCreateAPIView):
     serializer_class = ProductPromotionSerializer
     permission_classes = [permissions.IsAuthenticated, IsSeller]
@@ -132,12 +169,17 @@ class ProductPromotionView(generics.ListCreateAPIView):
         serializer.save(seller=self.request.user.seller_profile)
 
 
+# ──────────────────────────────────────
+# Seller: Product Images
+# ──────────────────────────────────────
+
 class ProductImageUploadView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsSeller]
     parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request, pk):
-        product = Product.objects.get(
+        product = get_object_or_404(
+            Product,
             id=pk,
             seller=request.user.seller_profile
         )
@@ -161,37 +203,3 @@ class ProductImageUploadView(APIView):
             ProductImageSerializer(image).data,
             status=status.HTTP_201_CREATED
         )
-
-
-class ProductVariantDetailView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = ProductVariantSerializer
-    permission_classes = [permissions.IsAuthenticated, IsSeller]
-
-    def get_queryset(self):
-        return ProductVariant.objects.filter(
-            product__id=self.kwargs['pk'],
-            product__seller=self.request.user.seller_profile
-        )
-
-    def get_object(self):
-        return ProductVariant.objects.get(
-            id=self.kwargs['variant_pk'],
-            product__id=self.kwargs['pk'],
-            product__seller=self.request.user.seller_profile
-        )
-
-
-class ProductImageDeleteView(generics.DestroyAPIView):
-    permission_classes = [permissions.IsAuthenticated, IsSeller]
-
-    def get_object(self):
-        return ProductImage.objects.get(
-            id=self.kwargs['image_pk'],
-            product__id=self.kwargs['pk'],
-            product__seller=self.request.user.seller_profile
-        )
-
-
-class AdminProductDeleteView(generics.DestroyAPIView):
-    permission_classes = [permissions.IsAuthenticated, IsAdmin]
-    queryset = Product.objects.all()
