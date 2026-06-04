@@ -113,12 +113,16 @@ class AdminProductDetailView(generics.RetrieveUpdateAPIView):
                 previous_status=''
             )
             send_product_approved(instance)
+            for variant in instance.variants.filter(sku__isnull=True):
+                variant.save()
         elif new_status == 'approved' and not instance.previous_status:
             # First-time approval
             instance_updated = serializer.save(status='approved')
             instance_updated.approved_at = timezone.now()
             instance_updated.save()
             send_product_approved(instance_updated)
+            for variant in instance_updated.variants.filter(sku__isnull=True):
+                variant.save()
         elif new_status == 'rejected':
             serializer.save()
             send_product_rejected(instance)
