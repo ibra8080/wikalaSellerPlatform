@@ -17,7 +17,7 @@ from utils.email import send_product_approved, send_product_rejected
 
 
 # Fields that a seller is NOT allowed to change directly
-SELLER_PROTECTED_FIELDS = {'status', 'rejection_reason', 'previous_status',
+SELLER_PROTECTED_FIELDS = {'rejection_reason', 'previous_status',
                            'shopify_product_id', 'approved_at', 'listed_at'}
 
 # Fields that trigger re-review when changed on an active product
@@ -58,6 +58,12 @@ class ProductDetailView(generics.RetrieveUpdateAPIView):
     def perform_update(self, serializer):
         instance = self.get_object()
         data = self.request.data
+
+        # Seller can only change status: draft → pending_review
+        new_status = data.get('status')
+        if new_status:
+            if not (instance.status == 'draft' and new_status == 'pending_review'):
+                data.pop('status', None)
 
         # Strip protected fields — seller cannot change these
         for field in SELLER_PROTECTED_FIELDS:
