@@ -75,7 +75,7 @@ class AdminSaleRecordCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated, IsAdmin]
 
     def perform_create(self, serializer):
-        serializer.save(seller=serializer.validated_data['product'].seller)
+        serializer.save(seller=serializer.validated_data['variant'].product.seller)
 
 
 class StatementCalculateView(APIView):
@@ -107,7 +107,7 @@ class StatementCalculateView(APIView):
             seller_id=seller_id,
             sale_date__gte=period_start_date,
             sale_date__lte=period_end_date,
-        ).select_related('product')
+        ).select_related('variant', 'variant__product')
 
         inventories = VariantInventory.objects.filter(
             variant__product__seller_id=seller_id,
