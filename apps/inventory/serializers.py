@@ -36,18 +36,23 @@ class InboundShipmentUpdateSerializer(serializers.ModelSerializer):
 
 
 class ShipmentRequestItemSerializer(serializers.ModelSerializer):
-    product_name = serializers.CharField(source='product.name_en', read_only=True)
-    product_code = serializers.CharField(source='product.product_code', read_only=True)
+    variant_sku = serializers.CharField(source='variant.sku', read_only=True)
+    product_name = serializers.CharField(source='variant.product.name_en', read_only=True)
+    product_code = serializers.CharField(source='variant.product.product_code', read_only=True)
+    color = serializers.CharField(source='variant.color', read_only=True)
+    size = serializers.CharField(source='variant.size', read_only=True)
 
     class Meta:
         model = ShipmentRequestItem
         fields = (
-            'id', 'product', 'product_name', 'product_code',
+            'id', 'variant', 'variant_sku', 'product_name', 'product_code',
+            'color', 'size',
             'cartons_count', 'units_per_carton', 'total_units',
             'carton_weight_kg', 'carton_length_cm',
             'carton_width_cm', 'carton_height_cm',
         )
         read_only_fields = (
+            'variant_sku', 'product_name', 'product_code', 'color', 'size',
             'units_per_carton', 'total_units',
             'carton_weight_kg', 'carton_length_cm',
             'carton_width_cm', 'carton_height_cm',

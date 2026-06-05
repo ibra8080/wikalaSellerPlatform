@@ -119,8 +119,8 @@ class ShipmentRequestItem(models.Model):
         on_delete=models.CASCADE,
         related_name='items'
     )
-    product = models.ForeignKey(
-        'products.Product',
+    variant = models.ForeignKey(
+        'products.ProductVariant',
         on_delete=models.CASCADE,
         related_name='shipment_items'
     )
@@ -141,14 +141,15 @@ class ShipmentRequestItem(models.Model):
     )
 
     def save(self, *args, **kwargs):
-        if self.product:
-            self.units_per_carton = self.product.units_per_carton or 0
-            self.carton_weight_kg = self.product.carton_weight_kg
-            self.carton_length_cm = self.product.carton_length_cm
-            self.carton_width_cm = self.product.carton_width_cm
-            self.carton_height_cm = self.product.carton_height_cm
+        if self.variant:
+            product = self.variant.product
+            self.units_per_carton = product.units_per_carton or 0
+            self.carton_weight_kg = product.carton_weight_kg
+            self.carton_length_cm = product.carton_length_cm
+            self.carton_width_cm = product.carton_width_cm
+            self.carton_height_cm = product.carton_height_cm
             self.total_units = self.cartons_count * self.units_per_carton
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.shipment_request.request_number} — {self.product.name_en}"
+        return f"{self.shipment_request.request_number} — {self.variant.sku}"
