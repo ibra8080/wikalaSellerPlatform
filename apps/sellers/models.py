@@ -32,7 +32,7 @@ class SellerProfile(models.Model):
     )
     seller_id = models.CharField(max_length=20, unique=True, blank=True)
     full_name = models.CharField(max_length=100)
-    business_name = models.CharField(max_length=100)
+    business_name = models.CharField(max_length=100, unique=True)
     profile_pic_url = models.URLField(blank=True)
     bio = models.TextField(blank=True)
     phone = models.CharField(max_length=20)
