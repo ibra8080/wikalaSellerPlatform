@@ -13,12 +13,12 @@ class FeeStructureSerializer(serializers.ModelSerializer):
 
 
 class SaleRecordSerializer(serializers.ModelSerializer):
-    product_name = serializers.CharField(source='product.name_en', read_only=True)
+    variant_sku = serializers.CharField(source='variant.sku', read_only=True)
 
     class Meta:
         model = SaleRecord
         fields = (
-            'id', 'product', 'product_name', 'seller',
+            'id', 'variant', 'variant_sku', 'seller',
             'statement', 'shopify_order_id', 'channel',
             'quantity_sold', 'unit_price', 'total_amount',
             'sale_date', 'created_at'

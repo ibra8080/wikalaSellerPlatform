@@ -25,8 +25,8 @@ class SellerStatementAdmin(admin.ModelAdmin):
 @admin.register(SaleRecord)
 class SaleRecordAdmin(admin.ModelAdmin):
     list_display = (
-        'seller', 'product', 'channel',
+        'seller', 'variant', 'channel',
         'quantity_sold', 'total_amount', 'sale_date'
     )
     list_filter = ('channel',)
-    search_fields = ('seller__business_name', 'product__name_en', 'shopify_order_id')
+    search_fields = ('seller__business_name', 'variant__sku', 'shopify_order_id')

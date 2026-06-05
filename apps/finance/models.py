@@ -59,8 +59,8 @@ class SaleRecord(models.Model):
         WIKALA = 'wikala', 'Wikala'
         EXTERNAL = 'external', 'External'
 
-    product = models.ForeignKey(
-        Product, on_delete=models.CASCADE, related_name='sale_records'
+    variant = models.ForeignKey(
+        'products.ProductVariant', on_delete=models.CASCADE, related_name='sale_records'
     )
     seller = models.ForeignKey(
         SellerProfile, on_delete=models.CASCADE, related_name='sale_records'
@@ -82,7 +82,7 @@ class SaleRecord(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.seller.business_name} — {self.product.name_en} — {self.sale_date}"
+        return f"{self.seller.business_name} — {self.variant.sku} — {self.sale_date}"
 
 class WebService(models.Model):
     class ServiceType(models.TextChoices):
