@@ -13,6 +13,7 @@ from .views import (
     SellerChargesListView,
     AdminChargesListCreateView, AdminChargeDetailView,
     AdminCreateRegistrationChargeView,
+    SellerActivateServiceView,
 )
 
 urlpatterns = [

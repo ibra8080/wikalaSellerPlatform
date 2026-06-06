@@ -219,6 +219,63 @@ class StatementCalculateView(APIView):
             'shipping_detail':     shipping_detail,
         })
 
+class SellerActivateServiceView(APIView):
+    """Seller: ينشئ فاتورة على نفسه لخدمة اختيارية"""
+    permission_classes = [permissions.IsAuthenticated, IsSeller]
+
+    def post(self, request, service_id):
+        from apps.finance.models import WebService, WebServiceCharge, SellerDiscount, SellerDiscountCode
+
+        try:
+            service = WebService.objects.get(id=service_id, is_active=True)
+        except WebService.DoesNotExist:
+            return Response({'error': 'Service not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        seller = request.user.seller_profile
+
+        # Check if already charged
+        if WebServiceCharge.objects.filter(seller=seller, service=service).exists():
+            return Response({'error': 'Service already activated'}, status=status.HTTP_400_BAD_REQUEST)
+
+        original_price = service.price
+        discount_amount = Decimal('0')
+
+        # Direct discount
+        direct = SellerDiscount.objects.filter(
+            seller=seller, service=service, is_active=True
+        ).first()
+        if direct:
+            if direct.discount_type == 'percent':
+                discount_amount = original_price * direct.value / 100
+            else:
+                discount_amount = direct.value
+
+        # Code discount
+        code_usage = SellerDiscountCode.objects.filter(
+            seller=seller, code__is_active=True
+        ).select_related('code').first()
+        if code_usage and code_usage.code.is_valid():
+            code = code_usage.code
+            if code.applies_to == 'all' or code.service == service:
+                if code.discount_type == 'percent':
+                    code_disc = original_price * code.value / 100
+                else:
+                    code_disc = code.value
+                discount_amount = max(discount_amount, code_disc)
+
+        final_price = max(Decimal('0'), original_price - discount_amount)
+
+        charge = WebServiceCharge.objects.create(
+            seller=seller,
+            service=service,
+            original_price=original_price,
+            discount_amount=discount_amount,
+            final_price=final_price,
+            status='waived' if final_price == 0 else 'pending',
+        )
+        return Response(WebServiceChargeSerializer(charge).data, status=status.HTTP_201_CREATED)
+
+
 # ── WebService ────────────────────────────────────────────────────────────────
 
 class WebServiceListView(generics.ListAPIView):
