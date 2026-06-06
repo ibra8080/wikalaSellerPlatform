@@ -28,6 +28,7 @@ urlpatterns = [
     path('charges/', SellerChargesListView.as_view(), name='seller-charges'),
     path('codes/apply/', ApplyDiscountCodeView.as_view(), name='apply-code'),
     path('codes/', SellerActiveCodesView.as_view(), name='seller-codes'),
+    path('services/<int:service_id>/activate/', SellerActivateServiceView.as_view(), name='seller-activate-service'),
 
     # Admin
     path('admin/statements/', AdminStatementListView.as_view(), name='admin-statement-list'),
