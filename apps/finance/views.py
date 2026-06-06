@@ -1,4 +1,5 @@
 from rest_framework import generics, permissions, status
+from rest_framework.exceptions import ValidationError
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import (
@@ -389,6 +390,17 @@ class AdminSellerDiscountDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = SellerDiscountSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdmin]
     queryset = SellerDiscount.objects.all()
+
+    def perform_destroy(self, instance):
+        from apps.finance.models import WebServiceCharge
+        has_charges = WebServiceCharge.objects.filter(
+            seller=instance.seller,
+            service=instance.service,
+            discount_amount__gt=0
+        ).exists()
+        if has_charges:
+            raise ValidationError('Cannot delete a discount linked to existing charges.')
+        instance.delete()
 
 
 # ── WebServiceCharge ──────────────────────────────────────────────────────────
