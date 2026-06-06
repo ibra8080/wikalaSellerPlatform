@@ -123,11 +123,37 @@ class AdminProductDetailView(generics.RetrieveUpdateAPIView):
             send_product_approved(instance_updated)
             for variant in instance_updated.variants.filter(sku__isnull=True):
                 variant.save()
+            self._create_listing_charge(instance_updated)
         elif new_status == 'rejected':
             serializer.save()
             send_product_rejected(instance)
         else:
             serializer.save()
+
+    def _create_listing_charge(self, product):
+        from apps.finance.models import WebService, WebServiceCharge
+        from decimal import Decimal
+        try:
+            service = WebService.objects.filter(
+                level='product', is_active=True
+            ).first()
+            if not service:
+                return
+            if WebServiceCharge.objects.filter(
+                seller=product.seller, service=service, product=product
+            ).exists():
+                return
+            WebServiceCharge.objects.create(
+                seller=product.seller,
+                service=service,
+                product=product,
+                original_price=service.price,
+                discount_amount=Decimal('0'),
+                final_price=service.price,
+                status='pending',
+            )
+        except Exception as e:
+            print(f"Listing charge error: {e}")
 
 
 class AdminProductDeleteView(generics.DestroyAPIView):
