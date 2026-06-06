@@ -56,8 +56,58 @@ class SellerDetailView(generics.RetrieveUpdateAPIView):
             instance.approved_at = timezone.now()
             instance.save()
             send_seller_approved(instance)
+            # Auto-create registration charge
+            self._create_registration_charge(instance)
         elif instance.status == 'rejected':
             send_seller_rejected(instance)
+
+    def _create_registration_charge(self, seller):
+        from apps.finance.models import (
+            WebService, WebServiceCharge, SellerDiscount, SellerDiscountCode
+        )
+        from decimal import Decimal
+        try:
+            service = WebService.objects.filter(
+                type='one_time', mandatory=True, is_active=True
+            ).first()
+            if not service:
+                return
+            if WebServiceCharge.objects.filter(seller=seller, service=service).exists():
+                return
+            original_price = service.price
+            discount_amount = Decimal('0')
+            # Direct discount
+            direct = SellerDiscount.objects.filter(
+                seller=seller, service=service, is_active=True
+            ).first()
+            if direct:
+                if direct.discount_type == 'percent':
+                    discount_amount = original_price * direct.value / 100
+                else:
+                    discount_amount = direct.value
+            # Code discount
+            code_usage = SellerDiscountCode.objects.filter(
+                seller=seller, code__is_active=True
+            ).select_related('code').first()
+            if code_usage and code_usage.code.is_valid():
+                code = code_usage.code
+                if code.applies_to == 'all' or code.service == service:
+                    if code.discount_type == 'percent':
+                        code_disc = original_price * code.value / 100
+                    else:
+                        code_disc = code.value
+                    discount_amount = max(discount_amount, code_disc)
+            final_price = max(Decimal('0'), original_price - discount_amount)
+            WebServiceCharge.objects.create(
+                seller=seller,
+                service=service,
+                original_price=original_price,
+                discount_amount=discount_amount,
+                final_price=final_price,
+                status='waived' if final_price == 0 else 'pending',
+            )
+        except Exception as e:
+            print(f"Registration charge error: {e}")
 
 
 # Seller: upload documents
