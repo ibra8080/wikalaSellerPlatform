@@ -38,11 +38,12 @@ class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
     variants = ProductVariantSerializer(many=True, read_only=True)
     certifications = CertificationSerializer(many=True, read_only=True)
+    seller_name = serializers.CharField(source='seller.business_name', read_only=True)
 
     class Meta:
         model = Product
         fields = (
-            'id', 'product_code', 'seller',
+            'id', 'product_code', 'seller', 'seller_name',
             'name_ar', 'name_en', 'name_de',
             'description_ar', 'description_en', 'description_de',
             'marketing_desc_ar', 'marketing_desc_en', 'marketing_desc_de',
