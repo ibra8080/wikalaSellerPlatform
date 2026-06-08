@@ -92,7 +92,7 @@ class ShipmentRequestListCreateView(generics.ListCreateAPIView):
         ).order_by('-created_at')
 
 
-class ShipmentRequestDetailView(generics.RetrieveAPIView):
+class ShipmentRequestDetailView(generics.RetrieveDestroyAPIView):
     serializer_class = ShipmentRequestSerializer
     permission_classes = [permissions.IsAuthenticated, IsSeller]
 
@@ -100,6 +100,12 @@ class ShipmentRequestDetailView(generics.RetrieveAPIView):
         return ShipmentRequest.objects.filter(
             seller=self.request.user.seller_profile
         )
+
+    def perform_destroy(self, instance):
+        if instance.status not in ('draft', 'cancelled'):
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError('Only draft or cancelled requests can be deleted.')
+        instance.delete()
 
 
 # ── Admin: Shipment Requests ──
