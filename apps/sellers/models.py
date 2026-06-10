@@ -39,6 +39,19 @@ class SellerProfile(models.Model):
     whatsapp = models.CharField(max_length=20, blank=True)
     country = models.CharField(max_length=50)
     city = models.CharField(max_length=50)
+
+    # Legal Information
+    legal_company_name = models.CharField(max_length=200, blank=True)
+    tax_id = models.CharField(max_length=50, blank=True)
+    commercial_register_no = models.CharField(max_length=50, blank=True)
+    legal_address = models.TextField(blank=True)
+
+    # Banking Information
+    bank_account_holder = models.CharField(max_length=100, blank=True)
+    bank_name = models.CharField(max_length=100, blank=True)
+    bank_iban = models.CharField(max_length=50, blank=True)
+    bank_swift = models.CharField(max_length=20, blank=True)
+
     seller_tier = models.ForeignKey(
         SellerTier, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='sellers'
