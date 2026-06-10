@@ -45,7 +45,7 @@ class SellerListView(generics.ListAPIView):
 
 
 # Admin: view/update a specific seller (approve/reject)
-class SellerDetailView(generics.RetrieveUpdateAPIView):
+class SellerDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = SellerProfileSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdmin]
     queryset = SellerProfile.objects.all()
