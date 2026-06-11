@@ -648,6 +648,48 @@ class StatementGenerateView(APIView):
             )
             order += 1
 
+        # Shipping
+        shipping_amount = Decimal('0')
+        if shipping_rate > 0:
+            products_for_seller = Product.objects.filter(
+                seller_id=seller_id,
+                status__in=['in_transit', 'in_warehouse_germany', 'listed']
+            )
+            for product in products_for_seller:
+                if not all([
+                    product.carton_weight_kg,
+                    product.carton_length_cm,
+                    product.carton_width_cm,
+                    product.carton_height_cm,
+                    product.units_per_carton,
+                ]):
+                    continue
+                vol_weight = (
+                    Decimal(str(product.carton_length_cm)) *
+                    Decimal(str(product.carton_width_cm)) *
+                    Decimal(str(product.carton_height_cm))
+                ) / Decimal('5000')
+                actual_weight = Decimal(str(product.carton_weight_kg))
+                chargeable = max(actual_weight, vol_weight)
+                total_units = sum(
+                    inv.quantity_in_germany
+                    for inv in inventories
+                    if inv.variant.product_id == product.id
+                )
+                if total_units == 0:
+                    continue
+                num_cartons = Decimal(str(total_units)) / Decimal(str(product.units_per_carton))
+                shipping_amount += chargeable * num_cartons * shipping_rate
+
+            if shipping_amount > 0:
+                StatementLineItem.objects.create(
+                    statement=stmt, item_type='shipping', order_index=order,
+                    description='International Shipping',
+                    quantity=1, unit_price=shipping_amount,
+                    amount=round(shipping_amount, 2), discount=Decimal('0'),
+                )
+                order += 1
+
         # Web Service Charges
         charges = WebServiceCharge.objects.filter(
             seller_id=seller_id,
