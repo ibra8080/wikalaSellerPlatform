@@ -2,7 +2,8 @@ from rest_framework import serializers
 from .models import (
     FeeStructure, SellerStatement, SaleRecord,
     WebService, DiscountCode, SellerDiscountCode,
-    SellerDiscount, WebServiceCharge
+    SellerDiscount, WebServiceCharge,
+    StatementLineItem, StatementDispute
 )
 
 class FeeStructureSerializer(serializers.ModelSerializer):
@@ -26,21 +27,46 @@ class SaleRecordSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'seller', 'created_at')
 
 
+class StatementLineItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StatementLineItem
+        fields = (
+            'id', 'item_type', 'description', 'quantity',
+            'unit_price', 'amount', 'discount', 'reference_id', 'order_index'
+        )
+
+
+class StatementDisputeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StatementDispute
+        fields = (
+            'id', 'line_item', 'seller_message', 'admin_response',
+            'status', 'created_at', 'resolved_at'
+        )
+        read_only_fields = ('id', 'admin_response', 'status', 'created_at', 'resolved_at')
+
+
 class SellerStatementSerializer(serializers.ModelSerializer):
-    sale_records = SaleRecordSerializer(many=True, read_only=True)
-    seller_name = serializers.CharField(
-        source='seller.business_name', read_only=True
-    )
+    line_items = StatementLineItemSerializer(many=True, read_only=True)
+    disputes = StatementDisputeSerializer(many=True, read_only=True)
+    seller_name = serializers.CharField(source='seller.business_name', read_only=True)
+    has_dispute = serializers.SerializerMethodField()
 
     class Meta:
         model = SellerStatement
         fields = (
             'id', 'seller', 'seller_name', 'period_start', 'period_end',
-            'total_sales', 'commission_amount', 'storage_fee_amount',
-            'pick_pack_amount', 'shipping_fee_amount', 'external_sales_amount',
-            'net_amount', 'status', 'paid_at', 'created_at', 'sale_records'
+            'total_sales', 'total_fees', 'overall_discount', 'net_amount',
+            'commission_amount', 'storage_fee_amount', 'pick_pack_amount',
+            'shipping_fee_amount', 'external_sales_amount',
+            'status', 'admin_notes', 'sent_at', 'auto_finalize_date',
+            'paid_at', 'created_at', 'updated_at',
+            'line_items', 'disputes', 'has_dispute'
         )
-        read_only_fields = ('id', 'seller_name', 'created_at')
+        read_only_fields = ('id', 'seller_name', 'created_at', 'updated_at', 'has_dispute')
+
+    def get_has_dispute(self, obj):
+        return obj.disputes.filter(status='open').exists()
 
 class WebServiceSerializer(serializers.ModelSerializer):
     class Meta:
