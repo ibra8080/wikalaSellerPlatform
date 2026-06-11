@@ -52,16 +52,32 @@ class SellerStatementSerializer(serializers.ModelSerializer):
     seller_name = serializers.CharField(source='seller.business_name', read_only=True)
     has_dispute = serializers.SerializerMethodField()
 
+    # بيانات البائع القانونية
+    seller_business_name = serializers.CharField(source='seller.business_name', read_only=True)
+    seller_legal_name = serializers.CharField(source='seller.legal_company_name', read_only=True)
+    seller_full_name = serializers.CharField(source='seller.full_name', read_only=True)
+    seller_email = serializers.EmailField(source='seller.user.email', read_only=True)
+    seller_phone = serializers.CharField(source='seller.phone', read_only=True)
+    seller_legal_address = serializers.CharField(source='seller.legal_address', read_only=True)
+    seller_city = serializers.CharField(source='seller.city', read_only=True)
+    seller_country = serializers.CharField(source='seller.country', read_only=True)
+    seller_tax_id = serializers.CharField(source='seller.tax_id', read_only=True)
+    seller_commercial_register = serializers.CharField(source='seller.commercial_register_no', read_only=True)
+    seller_id_code = serializers.CharField(source='seller.seller_id', read_only=True)
+
     class Meta:
         model = SellerStatement
         fields = (
             'id', 'seller', 'seller_name', 'period_start', 'period_end',
-            'total_sales', 'total_fees', 'overall_discount', 'net_amount',
+            'total_sales', 'total_fees', 'overall_discount', 'discount_description', 'net_amount',
             'commission_amount', 'storage_fee_amount', 'pick_pack_amount',
             'shipping_fee_amount', 'external_sales_amount',
             'status', 'admin_notes', 'sent_at', 'auto_finalize_date',
             'paid_at', 'created_at', 'updated_at',
-            'line_items', 'disputes', 'has_dispute'
+            'line_items', 'disputes', 'has_dispute',
+            'seller_business_name', 'seller_legal_name', 'seller_full_name', 'seller_email',
+            'seller_phone', 'seller_legal_address', 'seller_city', 'seller_country',
+            'seller_tax_id', 'seller_commercial_register', 'seller_id_code',
         )
         read_only_fields = ('id', 'seller_name', 'created_at', 'updated_at', 'has_dispute')
 
