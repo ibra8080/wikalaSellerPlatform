@@ -586,25 +586,35 @@ class StatementGenerateView(APIView):
         )
         order += 1
 
-        # 2. Commission
+        # 2. VAT (19%)
+        vat_amount = total_sales * Decimal('0.19')
+        StatementLineItem.objects.create(
+            statement=stmt, item_type='vat', order_index=order,
+            description='VAT (19%)',
+            quantity=1, unit_price=vat_amount,
+            amount=round(vat_amount, 2), discount=Decimal('0'),
+        )
+        order += 1
+
+        # 3. Commission
         commission = Decimal('0')
         for rec in sale_records:
-            commission += (rec.unit_price * fee.commission_wikala + Decimal('1')) * rec.quantity_sold
+            commission += rec.unit_price * fee.commission_wikala * rec.quantity_sold
         StatementLineItem.objects.create(
             statement=stmt, item_type='commission', order_index=order,
-            description='Wikala Commission (15% + €1/unit)',
+            description='Wikala Commission (15%)',
             quantity=1, unit_price=commission,
             amount=commission, discount=Decimal('0'),
         )
         order += 1
 
-        # 3. Pick & Pack
-        pick_pack = Decimal('0')
-        for rec in sale_records:
-            pick_pack += fee.pick_pack_fee * rec.quantity_sold
+        # 4. Pick & Pack
+        order_ids = set(rec.shopify_order_id for rec in sale_records if rec.shopify_order_id)
+        num_orders = len(order_ids) if order_ids else sale_records.count()
+        pick_pack = fee.pick_pack_fee * Decimal(str(num_orders))
         StatementLineItem.objects.create(
             statement=stmt, item_type='pick_pack', order_index=order,
-            description='Pick & Pack / Fulfillment Fee',
+            description=f'Pick & Pack Fee ({num_orders} order{"s" if num_orders != 1 else ""})',
             quantity=1, unit_price=pick_pack,
             amount=pick_pack, discount=Decimal('0'),
         )

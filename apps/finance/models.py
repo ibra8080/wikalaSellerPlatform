@@ -83,6 +83,7 @@ class SellerStatement(models.Model):
 class StatementLineItem(models.Model):
     class ItemType(models.TextChoices):
         SALE = 'sale', 'Sale'
+        VAT = 'vat', 'VAT'
         COMMISSION = 'commission', 'Commission'
         STORAGE = 'storage', 'Storage Fee'
         SHIPPING = 'shipping', 'Shipping Fee'
