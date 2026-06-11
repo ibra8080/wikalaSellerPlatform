@@ -571,50 +571,46 @@ class StatementGenerateView(APIView):
 
         order = 0
 
-        # Sales
+        # 1. Sales
         sale_records = SaleRecord.objects.filter(
             seller_id=seller_id,
             sale_date__gte=period_start_date,
             sale_date__lte=period_end_date,
         )
-        total_sales = Decimal('0')
-        for rec in sale_records:
-            total_sales += rec.total_amount
-        if total_sales > 0:
-            StatementLineItem.objects.create(
-                statement=stmt, item_type='sale', order_index=order,
-                description=f'Sales ({period_start} — {period_end})',
-                quantity=sale_records.count(), unit_price=Decimal('0'),
-                amount=total_sales, discount=Decimal('0'),
-            )
-            order += 1
+        total_sales = sum(rec.total_amount for rec in sale_records) or Decimal('0')
+        StatementLineItem.objects.create(
+            statement=stmt, item_type='sale', order_index=order,
+            description=f'Total Sales ({period_start} — {period_end})',
+            quantity=sale_records.count() or 1, unit_price=Decimal('0'),
+            amount=total_sales, discount=Decimal('0'),
+        )
+        order += 1
 
-        # Commission
+        # 2. Commission
         commission = Decimal('0')
-        pick_pack = Decimal('0')
         for rec in sale_records:
             commission += (rec.unit_price * fee.commission_wikala + Decimal('1')) * rec.quantity_sold
+        StatementLineItem.objects.create(
+            statement=stmt, item_type='commission', order_index=order,
+            description='Wikala Commission (15% + €1/unit)',
+            quantity=1, unit_price=commission,
+            amount=commission, discount=Decimal('0'),
+        )
+        order += 1
+
+        # 3. Pick & Pack
+        pick_pack = Decimal('0')
+        for rec in sale_records:
             pick_pack += fee.pick_pack_fee * rec.quantity_sold
+        StatementLineItem.objects.create(
+            statement=stmt, item_type='pick_pack', order_index=order,
+            description='Pick & Pack / Fulfillment Fee',
+            quantity=1, unit_price=pick_pack,
+            amount=pick_pack, discount=Decimal('0'),
+        )
+        order += 1
 
-        if commission > 0:
-            StatementLineItem.objects.create(
-                statement=stmt, item_type='commission', order_index=order,
-                description='Wikala Commission (15% + €1/unit)',
-                quantity=1, unit_price=commission,
-                amount=commission, discount=Decimal('0'),
-            )
-            order += 1
-
-        if pick_pack > 0:
-            StatementLineItem.objects.create(
-                statement=stmt, item_type='pick_pack', order_index=order,
-                description='Pick & Pack Fee',
-                quantity=1, unit_price=pick_pack,
-                amount=pick_pack, discount=Decimal('0'),
-            )
-            order += 1
-
-        # Storage
+        # 4. Storage
         from apps.inventory.models import VariantInventory
         inventories = VariantInventory.objects.filter(
             variant__product__seller_id=seller_id,
@@ -628,7 +624,9 @@ class StatementGenerateView(APIView):
             product = inv.variant.product
             if not inv.arrived_germany_at:
                 continue
-            arrived = inv.arrived_germany_at.replace(tzinfo=None)
+            arrived = inv.arrived_germany_at
+            if hasattr(arrived, 'replace'):
+                arrived = arrived.replace(tzinfo=None)
             days = (now - arrived).days
             months = Decimal(str(days)) / Decimal('30')
             l = Decimal(str(product.carton_length_cm or 0)) / 100
@@ -639,16 +637,15 @@ class StatementGenerateView(APIView):
             num_cartons = Decimal(str(inv.quantity_in_germany)) / Decimal(str(units_per_carton))
             storage_amount += fee.storage_fee_per_cbm * volume_m3 * num_cartons * months
 
-        if storage_amount > 0:
-            StatementLineItem.objects.create(
-                statement=stmt, item_type='storage', order_index=order,
-                description='Storage Fee (Germany Warehouse)',
-                quantity=1, unit_price=storage_amount,
-                amount=round(storage_amount, 2), discount=Decimal('0'),
-            )
-            order += 1
+        StatementLineItem.objects.create(
+            statement=stmt, item_type='storage', order_index=order,
+            description='Storage Fee (Germany Warehouse)',
+            quantity=1, unit_price=storage_amount,
+            amount=round(storage_amount, 2), discount=Decimal('0'),
+        )
+        order += 1
 
-        # Shipping
+        # 5. Shipping
         shipping_amount = Decimal('0')
         if shipping_rate > 0:
             products_for_seller = Product.objects.filter(
@@ -656,56 +653,48 @@ class StatementGenerateView(APIView):
                 status__in=['in_transit', 'in_warehouse_germany', 'listed']
             )
             for product in products_for_seller:
-                if not all([
-                    product.carton_weight_kg,
-                    product.carton_length_cm,
-                    product.carton_width_cm,
-                    product.carton_height_cm,
-                    product.units_per_carton,
-                ]):
+                if not all([product.carton_weight_kg, product.carton_length_cm,
+                            product.carton_width_cm, product.carton_height_cm,
+                            product.units_per_carton]):
                     continue
-                vol_weight = (
-                    Decimal(str(product.carton_length_cm)) *
-                    Decimal(str(product.carton_width_cm)) *
-                    Decimal(str(product.carton_height_cm))
-                ) / Decimal('5000')
+                vol_weight = (Decimal(str(product.carton_length_cm)) *
+                              Decimal(str(product.carton_width_cm)) *
+                              Decimal(str(product.carton_height_cm))) / Decimal('5000')
                 actual_weight = Decimal(str(product.carton_weight_kg))
                 chargeable = max(actual_weight, vol_weight)
-                total_units = sum(
-                    inv.quantity_in_germany
-                    for inv in inventories
-                    if inv.variant.product_id == product.id
-                )
+                total_units = sum(inv.quantity_in_germany for inv in inventories
+                                  if inv.variant.product_id == product.id)
                 if total_units == 0:
                     continue
                 num_cartons = Decimal(str(total_units)) / Decimal(str(product.units_per_carton))
                 shipping_amount += chargeable * num_cartons * shipping_rate
 
-            if shipping_amount > 0:
-                StatementLineItem.objects.create(
-                    statement=stmt, item_type='shipping', order_index=order,
-                    description='International Shipping',
-                    quantity=1, unit_price=shipping_amount,
-                    amount=round(shipping_amount, 2), discount=Decimal('0'),
-                )
-                order += 1
+        StatementLineItem.objects.create(
+            statement=stmt, item_type='shipping', order_index=order,
+            description='International Shipping',
+            quantity=1, unit_price=shipping_amount,
+            amount=round(shipping_amount, 2), discount=Decimal('0'),
+        )
+        order += 1
 
-        # Web Service Charges
+        # 6. Web Services
         charges = WebServiceCharge.objects.filter(
-            seller_id=seller_id,
-            status='pending',
+            seller_id=seller_id, status='pending',
             created_at__date__gte=period_start_date,
             created_at__date__lte=period_end_date,
         )
+        ws_total = Decimal('0')
+        ws_discount = Decimal('0')
         for charge in charges:
-            StatementLineItem.objects.create(
-                statement=stmt, item_type='web_service', order_index=order,
-                description=charge.service.name,
-                quantity=1, unit_price=charge.final_price,
-                amount=charge.final_price, discount=charge.discount_amount,
-                reference_id=str(charge.id),
-            )
-            order += 1
+            ws_total += charge.final_price
+            ws_discount += charge.discount_amount
+        StatementLineItem.objects.create(
+            statement=stmt, item_type='web_service', order_index=order,
+            description='Web Services (Registration, Listing, etc.)',
+            quantity=charges.count() or 1, unit_price=ws_total,
+            amount=ws_total, discount=ws_discount,
+        )
+        order += 1
 
         stmt.recalculate_totals()
 
