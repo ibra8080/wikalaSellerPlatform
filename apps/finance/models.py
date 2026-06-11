@@ -94,7 +94,7 @@ class StatementLineItem(models.Model):
     statement = models.ForeignKey(
         SellerStatement, on_delete=models.CASCADE, related_name='line_items'
     )
-    item_type = models.CharField(max_length=20, choices=ItemType.choices)
+    item_type = models.CharField(max_length=50)
     description = models.CharField(max_length=300)
     quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
