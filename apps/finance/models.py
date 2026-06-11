@@ -39,6 +39,7 @@ class SellerStatement(models.Model):
     total_sales = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total_fees = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     overall_discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    discount_description = models.CharField(max_length=300, blank=True)
     net_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     # Legacy fields (kept for backward compat)
