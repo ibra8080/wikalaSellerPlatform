@@ -676,6 +676,7 @@ class StatementSendView(APIView):
 
     def post(self, request, pk):
         from .models import SellerStatement
+        from apps.communication.models import Notification
         import datetime
         stmt = get_object_or_404(SellerStatement, id=pk)
         if stmt.status != 'draft':
@@ -685,6 +686,15 @@ class StatementSendView(APIView):
         stmt.sent_at = datetime.datetime.now()
         stmt.auto_finalize_date = datetime.date.today() + datetime.timedelta(days=15)
         stmt.save()
+
+        Notification.objects.create(
+            user=stmt.seller.user,
+            type='statement',
+            title='New Statement',
+            body=f'A new statement for {stmt.period_start} — {stmt.period_end} has been sent to you.',
+            related_url='/statements',
+        )
+
         return Response(SellerStatementSerializer(stmt).data)
 
 
