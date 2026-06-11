@@ -25,6 +25,8 @@ class SellerStatement(models.Model):
     class Status(models.TextChoices):
         DRAFT = 'draft', 'Draft'
         SENT = 'sent', 'Sent'
+        ACCEPTED = 'accepted', 'Accepted'
+        DISPUTED = 'disputed', 'Disputed'
         PAID = 'paid', 'Paid'
 
     seller = models.ForeignKey(
@@ -32,26 +34,104 @@ class SellerStatement(models.Model):
     )
     period_start = models.DateField()
     period_end = models.DateField()
+
+    # Cached totals (recalculated from line items)
     total_sales = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    total_fees = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    overall_discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    net_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+    # Legacy fields (kept for backward compat)
     commission_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     storage_fee_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     pick_pack_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     shipping_fee_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     external_sales_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    net_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
     status = models.CharField(
-        max_length=10,
-        choices=Status.choices,
-        default=Status.DRAFT
+        max_length=10, choices=Status.choices, default=Status.DRAFT
     )
+    admin_notes = models.TextField(blank=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    auto_finalize_date = models.DateField(null=True, blank=True)
     paid_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-period_end']
 
     def __str__(self):
         return f"{self.seller.business_name} — {self.period_start} : {self.period_end}"
+
+    def recalculate_totals(self):
+        from decimal import Decimal
+        sales = Decimal('0')
+        fees = Decimal('0')
+        for item in self.line_items.all():
+            if item.item_type == 'sale':
+                sales += item.amount - item.discount
+            else:
+                fees += item.amount - item.discount
+        self.total_sales = sales
+        self.total_fees = fees
+        self.net_amount = sales - fees - self.overall_discount
+        self.save(update_fields=['total_sales', 'total_fees', 'net_amount'])
+
+
+class StatementLineItem(models.Model):
+    class ItemType(models.TextChoices):
+        SALE = 'sale', 'Sale'
+        COMMISSION = 'commission', 'Commission'
+        STORAGE = 'storage', 'Storage Fee'
+        SHIPPING = 'shipping', 'Shipping Fee'
+        PICK_PACK = 'pick_pack', 'Pick & Pack'
+        WEB_SERVICE = 'web_service', 'Web Service'
+        CUSTOM = 'custom', 'Custom Charge'
+
+    statement = models.ForeignKey(
+        SellerStatement, on_delete=models.CASCADE, related_name='line_items'
+    )
+    item_type = models.CharField(max_length=20, choices=ItemType.choices)
+    description = models.CharField(max_length=300)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    reference_id = models.CharField(max_length=50, blank=True)
+    order_index = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['order_index', 'id']
+
+    def __str__(self):
+        return f"{self.statement} — {self.description} — €{self.amount}"
+
+
+class StatementDispute(models.Model):
+    class Status(models.TextChoices):
+        OPEN = 'open', 'Open'
+        RESOLVED = 'resolved', 'Resolved'
+        REJECTED = 'rejected', 'Rejected'
+
+    statement = models.ForeignKey(
+        SellerStatement, on_delete=models.CASCADE, related_name='disputes'
+    )
+    line_item = models.ForeignKey(
+        StatementLineItem, on_delete=models.CASCADE,
+        null=True, blank=True, related_name='disputes'
+    )
+    seller_message = models.TextField()
+    admin_response = models.TextField(blank=True)
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.OPEN
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Dispute — {self.statement} — {self.status}"
 
 
 class SaleRecord(models.Model):
