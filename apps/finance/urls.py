@@ -14,6 +14,10 @@ from .views import (
     AdminChargesListCreateView, AdminChargeDetailView,
     AdminCreateRegistrationChargeView,
     SellerActivateServiceView,
+    StatementLineItemListCreateView, StatementLineItemDetailView,
+    StatementGenerateView, StatementSendView, StatementMarkPaidView,
+    StatementAcceptView, StatementDisputeView,
+    AdminStatementDisputeResolveView,
 )
 
 urlpatterns = [
@@ -23,17 +27,25 @@ urlpatterns = [
     # Seller
     path('statements/', SellerStatementListView.as_view(), name='statement-list'),
     path('statements/<int:pk>/', SellerStatementDetailView.as_view(), name='statement-detail'),
+    path('statements/<int:pk>/accept/', StatementAcceptView.as_view(), name='statement-accept'),
+    path('statements/<int:pk>/dispute/', StatementDisputeView.as_view(), name='statement-dispute'),
     path('sales/', SaleRecordListView.as_view(), name='sale-records'),
     path('services/', WebServiceListView.as_view(), name='service-list'),
+    path('services/<int:service_id>/activate/', SellerActivateServiceView.as_view(), name='seller-activate-service'),
     path('charges/', SellerChargesListView.as_view(), name='seller-charges'),
     path('codes/apply/', ApplyDiscountCodeView.as_view(), name='apply-code'),
     path('codes/', SellerActiveCodesView.as_view(), name='seller-codes'),
-    path('services/<int:service_id>/activate/', SellerActivateServiceView.as_view(), name='seller-activate-service'),
 
     # Admin
     path('admin/statements/', AdminStatementListView.as_view(), name='admin-statement-list'),
+    path('admin/statements/generate/', StatementGenerateView.as_view(), name='statement-generate'),
     path('admin/statements/calculate/', StatementCalculateView.as_view(), name='statement-calculate'),
     path('admin/statements/<int:pk>/', AdminStatementDetailView.as_view(), name='admin-statement-detail'),
+    path('admin/statements/<int:pk>/send/', StatementSendView.as_view(), name='statement-send'),
+    path('admin/statements/<int:pk>/mark-paid/', StatementMarkPaidView.as_view(), name='statement-mark-paid'),
+    path('admin/statements/<int:pk>/line-items/', StatementLineItemListCreateView.as_view(), name='statement-line-items'),
+    path('admin/statements/<int:statement_id>/line-items/<int:pk>/', StatementLineItemDetailView.as_view(), name='statement-line-item-detail'),
+    path('admin/statements/<int:pk>/disputes/<int:dispute_id>/resolve/', AdminStatementDisputeResolveView.as_view(), name='statement-dispute-resolve'),
     path('admin/sales/', AdminSaleRecordCreateView.as_view(), name='admin-sale-create'),
     path('admin/services/', AdminWebServiceListCreateView.as_view(), name='admin-service-list'),
     path('admin/services/<int:pk>/', AdminWebServiceDetailView.as_view(), name='admin-service-detail'),
