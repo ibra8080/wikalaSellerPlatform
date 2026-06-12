@@ -15,7 +15,7 @@ class SellerProfileSerializer(serializers.ModelSerializer):
             'bank_account_holder', 'bank_name', 'bank_iban', 'bank_swift',
         )
         read_only_fields = (
-            'id', 'seller_id', 'status', 'rejection_reason', 'approved_at', 'created_at'
+            'id', 'seller_id', 'approved_at', 'created_at'
         )
 
 
