@@ -136,17 +136,31 @@ class SellerDiscountSerializer(serializers.ModelSerializer):
 
 
 class WebServiceChargeSerializer(serializers.ModelSerializer):
-    service_name  = serializers.CharField(source='service.name', read_only=True)
-    service_level = serializers.CharField(source='service.level', read_only=True)
-    seller_name   = serializers.CharField(source='seller.business_name', read_only=True)
-    product_name  = serializers.CharField(source='product.name_en', read_only=True, allow_null=True)
+    service_name        = serializers.CharField(source='service.name', read_only=True)
+    service_description = serializers.CharField(source='service.description', read_only=True)
+    service_level       = serializers.CharField(source='service.level', read_only=True)
+    service_price       = serializers.DecimalField(source='service.price', max_digits=8, decimal_places=2, read_only=True)
+    seller_name         = serializers.CharField(source='seller.business_name', read_only=True)
+    product_name        = serializers.CharField(source='product.name_en', read_only=True, allow_null=True)
+    product_code        = serializers.CharField(source='product.product_code', read_only=True, allow_null=True)
+    product_variants    = serializers.SerializerMethodField()
+
+    def get_product_variants(self, obj):
+        if not obj.product:
+            return []
+        return list(obj.product.variants.values('id', 'sku', 'color', 'size'))
 
     class Meta:
         model = WebServiceCharge
         fields = (
-            'id', 'seller', 'seller_name', 'service', 'service_name', 'service_level',
-            'product', 'product_name',
+            'id', 'seller', 'seller_name', 'service', 'service_name', 'service_description',
+            'service_level', 'service_price',
+            'product', 'product_name', 'product_code', 'product_variants',
             'statement', 'original_price', 'discount_amount', 'final_price',
             'status', 'period_month', 'period_year', 'notes', 'created_at'
         )
-        read_only_fields = ('id', 'seller_name', 'service_name', 'service_level', 'product_name', 'created_at')
+        read_only_fields = (
+            'id', 'seller_name', 'service_name', 'service_description',
+            'service_level', 'service_price', 'product_name', 'product_code',
+            'product_variants', 'created_at'
+        )
