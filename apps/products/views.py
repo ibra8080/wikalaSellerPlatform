@@ -135,7 +135,7 @@ class AdminProductDetailView(generics.RetrieveUpdateAPIView):
         from decimal import Decimal
         try:
             service = WebService.objects.filter(
-                level='product', is_active=True
+                level='product', mandatory=True, is_active=True
             ).first()
             if not service:
                 return
@@ -143,17 +143,25 @@ class AdminProductDetailView(generics.RetrieveUpdateAPIView):
                 seller=product.seller, service=service, product=product
             ).exists():
                 return
+
+            # حساب السعر حسب عدد الفاريانتس
+            variant_count = product.variants.count()
+            base_price = service.price  # €2.00
+            extra_variants = max(0, variant_count - 4)
+            extra_charge = Decimal(str(extra_variants)) * Decimal('0.50')
+            final_price = base_price + extra_charge
+
             WebServiceCharge.objects.create(
                 seller=product.seller,
                 service=service,
                 product=product,
-                original_price=service.price,
+                original_price=final_price,
                 discount_amount=Decimal('0'),
-                final_price=service.price,
+                final_price=final_price,
                 status='pending',
             )
-        except Exception as e:
-            print(f"Listing charge error: {e}")
+        except Exception:
+            pass
 
 
 class AdminProductDeleteView(generics.DestroyAPIView):
