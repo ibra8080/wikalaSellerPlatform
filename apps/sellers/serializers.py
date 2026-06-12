@@ -3,10 +3,12 @@ from .models import SellerProfile, SellerDocument, SellerTier, Promotion, Seller
 
 
 class SellerProfileSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source='user.email', read_only=True)
+
     class Meta:
         model = SellerProfile
         fields = (
-            'id', 'seller_id', 'full_name', 'business_name',
+            'id', 'email', 'seller_id', 'full_name', 'business_name',
             'profile_pic_url', 'bio', 'phone', 'whatsapp',
             'country', 'city', 'seller_tier', 'status',
             'rejection_reason', 'approved_at', 'created_at',
