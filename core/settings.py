@@ -180,6 +180,9 @@ EXTRA_CORS = os.getenv('CORS_ALLOWED_ORIGINS', '')
 if EXTRA_CORS:
     CORS_ALLOWED_ORIGINS += [origin.strip() for origin in EXTRA_CORS.split(',') if origin.strip()]
 
+# CSRF Trusted Origins
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:3000').split(',')
+
 # Auth User Model
 AUTH_USER_MODEL = 'users.User'
 
