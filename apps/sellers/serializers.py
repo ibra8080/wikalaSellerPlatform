@@ -29,6 +29,12 @@ class SellerRegisterSerializer(serializers.ModelSerializer):
             'country', 'city', 'bio', 'exported_before', 'referral_source'
         )
 
+    def validate_business_name(self, value):
+        from apps.sellers.models import SellerProfile
+        if SellerProfile.objects.filter(business_name__iexact=value).exists():
+            raise serializers.ValidationError('A seller with this business name already exists.')
+        return value
+
     def create(self, validated_data):
         user = self.context['request'].user
         profile, created = SellerProfile.objects.get_or_create(

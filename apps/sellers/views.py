@@ -10,11 +10,13 @@ from .serializers import (
 )
 from utils.cloudinary import upload_document
 from utils.email import send_seller_approved, send_seller_rejected
+import logging
+logger = logging.getLogger(__name__)
 
 
 class IsSeller(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user.role == 'seller'
+        return request.user.role == 'seller' and hasattr(request.user, 'seller_profile')
 
 
 class IsAdmin(permissions.BasePermission):
@@ -107,7 +109,7 @@ class SellerDetailView(generics.RetrieveUpdateDestroyAPIView):
                 status='waived' if final_price == 0 else 'pending',
             )
         except Exception as e:
-            print(f"Registration charge error: {e}")
+            logger.error(f"Registration charge error: {e}")
 
 
 # Seller: upload documents
