@@ -707,7 +707,6 @@ class StatementGenerateView(APIView):
         order += 1
 
         # 7. Monthly Product Listing Fees
-        from apps.products.models import Product
         active_products = Product.objects.filter(
             seller_id=seller_id,
             status__in=['approved', 'awaiting_seller_shipment', 'in_warehouse_egypt',
