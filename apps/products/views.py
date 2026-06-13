@@ -244,9 +244,31 @@ class ProductImageUploadView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # Validate file type
+        ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+        if file.content_type not in ALLOWED_TYPES:
+            return Response(
+                {'error': 'Invalid file type. Allowed: JPG, PNG, WebP'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Validate file size (5MB max)
+        MAX_SIZE = 5 * 1024 * 1024
+        if file.size > MAX_SIZE:
+            return Response(
+                {'error': 'File too large. Maximum size is 5MB.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Validate max images per product (10)
+        if product.images.count() >= 10:
+            return Response(
+                {'error': 'Maximum 10 images per product.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         url = upload_image(file, folder='products')
         is_primary = not product.images.exists()
-
         image = ProductImage.objects.create(
             product=product,
             image_url=url,
