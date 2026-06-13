@@ -706,6 +706,42 @@ class StatementGenerateView(APIView):
         )
         order += 1
 
+        # 7. Monthly Product Listing Fees
+        from apps.products.models import Product
+        active_products = Product.objects.filter(
+            seller_id=seller_id,
+            status__in=['approved', 'awaiting_seller_shipment', 'in_warehouse_egypt',
+                        'in_transit', 'in_warehouse_germany', 'listed']
+        ).prefetch_related('variants')
+
+        listing_service = WebService.objects.filter(
+            level='product', mandatory=True, is_active=True
+        ).first()
+
+        listing_total = Decimal('0')
+        listing_details = []
+        if listing_service:
+            base_price = listing_service.price
+            for product in active_products:
+                variant_count = product.variants.count()
+                extra = max(0, variant_count - 4)
+                product_fee = base_price + (Decimal(str(extra)) * Decimal('0.50'))
+                listing_total += product_fee
+                listing_details.append(f'{product.product_code}: {variant_count} variants = €{product_fee}')
+
+        StatementLineItem.objects.create(
+            statement=stmt, item_type='product_listing', order_index=order,
+            description='Monthly Product Listing ({} product{})'.format(
+                active_products.count(),
+                's' if active_products.count() != 1 else ''
+            ),
+            quantity=active_products.count() or 1,
+            unit_price=listing_total,
+            amount=listing_total, discount=Decimal('0'),
+            reference_id='; '.join(listing_details) if listing_details else '',
+        )
+        order += 1
+
         stmt.recalculate_totals()
 
         return Response(SellerStatementSerializer(stmt).data, status=status.HTTP_201_CREATED)
