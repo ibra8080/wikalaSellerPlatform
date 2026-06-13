@@ -67,7 +67,7 @@ class AdminStatementListView(generics.ListCreateAPIView):
     queryset = SellerStatement.objects.all().order_by('-period_end')
 
 
-class AdminStatementDetailView(generics.RetrieveUpdateAPIView):
+class AdminStatementDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = SellerStatementSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdmin]
     queryset = SellerStatement.objects.all()
