@@ -100,7 +100,7 @@ class StatementLineItem(models.Model):
     unit_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    reference_id = models.CharField(max_length=50, blank=True)
+    reference_id = models.CharField(max_length=500, blank=True)
     order_index = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
