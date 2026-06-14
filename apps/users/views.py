@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import RegisterSerializer, UserSerializer
 from .models import User
+from apps.sellers.models import SellerProfile
 
 
 class RegisterView(generics.CreateAPIView):
@@ -24,6 +25,11 @@ class ValidateUserView(APIView):
             errors['email'] = ['This email is already registered.']
         if username and User.objects.filter(username=username).exists():
             errors['username'] = ['This username is already taken.']
+
+        business_name = request.data.get('business_name', '')
+
+        if business_name and SellerProfile.objects.filter(business_name=business_name).exists():
+            errors['business_name'] = ['This business name is already taken.']
 
         if errors:
             return Response(errors, status=status.HTTP_400_BAD_REQUEST)
