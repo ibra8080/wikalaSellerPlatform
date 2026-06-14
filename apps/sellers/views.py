@@ -27,7 +27,7 @@ class IsAdmin(permissions.BasePermission):
 # Seller registers their profile
 class SellerRegisterView(generics.CreateAPIView):
     serializer_class = SellerRegisterSerializer
-    permission_classes = [permissions.IsAuthenticated, IsSeller]
+    permission_classes = [permissions.IsAuthenticated]
 
 
 # Seller views/updates their own profile
