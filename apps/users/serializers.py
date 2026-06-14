@@ -90,3 +90,11 @@ class FullRegisterSerializer(serializers.Serializer):
             referral_source=validated_data.get('referral_source', ''),
         )
         return user
+
+    def to_representation(self, instance):
+        return {
+            'id': instance.id,
+            'email': instance.email,
+            'username': instance.username,
+            'message': 'Registration successful',
+        }
