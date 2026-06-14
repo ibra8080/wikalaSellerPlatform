@@ -2,7 +2,7 @@ from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .serializers import RegisterSerializer, UserSerializer
+from .serializers import RegisterSerializer, UserSerializer, FullRegisterSerializer
 from .models import User
 from apps.sellers.models import SellerProfile
 
@@ -34,6 +34,11 @@ class ValidateUserView(APIView):
         if errors:
             return Response(errors, status=status.HTTP_400_BAD_REQUEST)
         return Response({'valid': True})
+
+
+class FullRegisterView(generics.CreateAPIView):
+    serializer_class = FullRegisterSerializer
+    permission_classes = [permissions.AllowAny]
 
 
 class MeView(generics.RetrieveUpdateAPIView):
