@@ -21,9 +21,9 @@ class ValidateUserView(APIView):
         username = request.data.get('username', '')
 
         if email and User.objects.filter(email=email).exists():
-            errors['email'] = 'This email is already registered.'
+            errors['email'] = ['This email is already registered.']
         if username and User.objects.filter(username=username).exists():
-            errors['username'] = 'This username is already taken.'
+            errors['username'] = ['This username is already taken.']
 
         if errors:
             return Response(errors, status=status.HTTP_400_BAD_REQUEST)
