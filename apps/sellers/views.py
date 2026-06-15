@@ -55,6 +55,10 @@ class SellerDetailView(generics.RetrieveUpdateDestroyAPIView):
     def perform_update(self, serializer):
         instance = serializer.save()
         if instance.status == 'approved' and not instance.approved_at:
+            if not instance.seller_id:
+                last = SellerProfile.objects.exclude(seller_id='').order_by('-id').first()
+                next_id = (last.id + 1) if last else 1
+                instance.seller_id = f"WK-{next_id:04d}"
             instance.approved_at = timezone.now()
             instance.save()
             send_seller_approved(instance)

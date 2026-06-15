@@ -76,16 +76,7 @@ class SellerProfile(models.Model):
         return f"{self.business_name} ({self.seller_id})"
 
     def save(self, *args, **kwargs):
-        # FIX: Use self.pk after first save to avoid race condition
-        is_new = not self.pk
-        if is_new:
-            # Save first to get the auto-generated pk
-            super().save(*args, **kwargs)
-            if not self.seller_id:
-                self.seller_id = f"WK-{self.pk:04d}"
-                super().save(update_fields=['seller_id'])
-        else:
-            super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 
 class SellerDocument(models.Model):
