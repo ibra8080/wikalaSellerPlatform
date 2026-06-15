@@ -30,7 +30,7 @@ class SellerProfile(models.Model):
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, related_name='seller_profile'
     )
-    seller_id = models.CharField(max_length=20, unique=True, blank=True)
+    seller_id = models.CharField(max_length=20, unique=True, blank=True, null=True, default=None)
     full_name = models.CharField(max_length=100)
     business_name = models.CharField(max_length=100, unique=True)
     profile_pic_url = models.URLField(blank=True)
