@@ -46,16 +46,22 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             {
                 'type': 'chat_message',
-                'message': content,
+                'id': message.id,
+                'sender': message.sender_id,
                 'sender_email': message.sender.email,
-                'created_at': str(message.created_at),
+                'content': content,
+                'is_read': False,
+                'created_at': message.created_at.isoformat(),
             }
         )
 
     async def chat_message(self, event):
         await self.send(text_data=json.dumps({
-            'message': event['message'],
+            'id': event['id'],
+            'sender': event['sender'],
             'sender_email': event['sender_email'],
+            'content': event['content'],
+            'is_read': event['is_read'],
             'created_at': event['created_at'],
         }))
 
