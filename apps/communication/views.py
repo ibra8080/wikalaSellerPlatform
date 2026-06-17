@@ -1,5 +1,5 @@
 from rest_framework import generics, permissions, status
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, NotFound
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
@@ -48,14 +48,17 @@ class MessageCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        conversation = get_object_or_404(Conversation, id=self.kwargs['pk'])
+        try:
+            conversation = Conversation.objects.get(id=self.kwargs['pk'])
+        except Conversation.DoesNotExist:
+            raise NotFound('Conversation not found.')
 
-        # Authorization: only the conversation owner or admin can send messages
         user = self.request.user
-        if user.role != 'admin' and conversation.seller != user.seller_profile:
-            raise PermissionDenied(
-                'You do not have permission to send messages in this conversation.'
-            )
+        is_admin = user.role == 'admin' or user.is_superuser
+        is_owner = hasattr(user, 'seller_profile') and \
+            conversation.seller_id == user.seller_profile.id
+        if not (is_admin or is_owner):
+            raise PermissionDenied('You do not have access to this conversation.')
 
         serializer.save(sender=user, conversation=conversation)
 
@@ -115,14 +118,17 @@ class IssueMessageCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        issue = get_object_or_404(Issue, id=self.kwargs['pk'])
+        try:
+            issue = Issue.objects.get(id=self.kwargs['pk'])
+        except Issue.DoesNotExist:
+            raise NotFound('Issue not found.')
 
-        # Authorization: only the issue owner or admin can send messages
         user = self.request.user
-        if user.role != 'admin' and issue.seller != user.seller_profile:
-            raise PermissionDenied(
-                'You do not have permission to send messages on this issue.'
-            )
+        is_admin = user.role == 'admin' or user.is_superuser
+        is_owner = hasattr(user, 'seller_profile') and \
+            issue.seller_id == user.seller_profile.id
+        if not (is_admin or is_owner):
+            raise PermissionDenied('You do not have access to this issue.')
 
         serializer.save(sender=user, issue=issue)
 
