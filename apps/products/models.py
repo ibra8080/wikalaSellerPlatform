@@ -1,5 +1,3 @@
-import random
-import time
 from django.db import models
 from apps.sellers.models import SellerProfile
 
@@ -114,20 +112,14 @@ class Product(models.Model):
     def save(self, *args, **kwargs):
         if not self.product_code:
             self.product_code = None
-
-        # FIX: Generate product_code using self.pk to avoid race condition
+        # Generate product_code on approval, using pk for guaranteed uniqueness
         if self.product_code is None and self.status == self.Status.APPROVED:
-            # Ensure saved first to get pk
             if not self.pk:
                 super().save(*args, **kwargs)
                 args = ()
                 kwargs = {}
-
-            seller_num = self.seller.seller_id.replace('WK-', '')
-            random.seed(time.time_ns())
-            random_part = random.randint(100, 999)
-            self.product_code = f"WKP{seller_num}{random_part}{self.pk:03d}"
-
+            seller_num = self.seller.seller_id.replace('WK-', '') if self.seller.seller_id else '0000'
+            self.product_code = f"WKP-{seller_num}-{self.pk}"
         super().save(*args, **kwargs)
 
 
@@ -167,16 +159,25 @@ class ProductVariant(models.Model):
     def save(self, *args, **kwargs):
         if not self.sku:
             self.sku = None
-
-        # FIX: Use self.pk after save to guarantee unique SKU
+        # Generate readable SKU: {product_code}-{COLOR}-{SIZE}
         if self.sku is None and self.product.product_code:
             if not self.pk:
                 super().save(*args, **kwargs)
                 args = ()
                 kwargs = {}
-
-            self.sku = f"{self.product.product_code}{self.pk:03d}"
-
+            color_part = (self.color[:3].upper() if self.color else '').strip()
+            size_part = (self.size.upper() if self.size else '').strip()
+            suffix_bits = [b for b in [color_part, size_part] if b]
+            if suffix_bits:
+                suffix = '-'.join(suffix_bits)
+            else:
+                # No color/size → use pk to stay unique
+                suffix = str(self.pk)
+            candidate = f"{self.product.product_code}-{suffix}"
+            # Guard against collision (same color+size on two variants)
+            if ProductVariant.objects.filter(sku=candidate).exclude(pk=self.pk).exists():
+                candidate = f"{candidate}-{self.pk}"
+            self.sku = candidate
         super().save(*args, **kwargs)
 
 

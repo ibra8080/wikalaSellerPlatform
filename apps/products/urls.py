@@ -7,6 +7,7 @@ from .views import (
     ProductImageUploadView,
     ProductVariantDetailView, ProductImageDeleteView,
     AdminProductDeleteView,
+    ShopifyExportView,
 )
 
 urlpatterns = [
@@ -25,4 +26,5 @@ urlpatterns = [
     path('admin/list/', AdminProductListView.as_view(), name='admin-product-list'),
     path('admin/<int:pk>/', AdminProductDetailView.as_view(), name='admin-product-detail'),
     path('admin/<int:pk>/delete/', AdminProductDeleteView.as_view(), name='admin-product-delete'),
+    path('admin/shopify-export/', ShopifyExportView.as_view(), name='shopify-export'),
 ]

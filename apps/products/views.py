@@ -291,3 +291,127 @@ class ProductImageDeleteView(generics.DestroyAPIView):
             product__id=self.kwargs['pk'],
             product__seller=self.request.user.seller_profile
         )
+
+
+# ============================================================
+# Shopify CSV Export
+# ============================================================
+import csv
+import re
+from django.http import HttpResponse
+
+
+def _slugify_handle(product_code):
+    handle = (product_code or '').lower().strip()
+    handle = re.sub(r'[^a-z0-9]+', '-', handle)
+    return handle.strip('-')
+
+
+SHOPIFY_CSV_COLUMNS = [
+    'Handle', 'Title', 'Body (HTML)', 'Vendor', 'Type', 'Tags', 'Published',
+    'Option1 Name', 'Option1 Value', 'Option2 Name', 'Option2 Value',
+    'Option3 Name', 'Option3 Value',
+    'Variant SKU', 'Variant Grams', 'Variant Inventory Tracker',
+    'Variant Inventory Qty', 'Variant Inventory Policy',
+    'Variant Fulfillment Service', 'Variant Price', 'Variant Compare-at Price',
+    'Variant Requires Shipping', 'Variant Taxable', 'Variant Barcode',
+    'Image Src', 'Image Alt Text',
+]
+
+
+class ShopifyExportView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+
+    def get(self, request):
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename="wikala_shopify_export.csv"'
+        response.write('﻿')
+
+        writer = csv.writer(response)
+        writer.writerow(SHOPIFY_CSV_COLUMNS)
+
+        products = (
+            Product.objects
+            .filter(status__in=['listed', 'approved'])
+            .prefetch_related('variants__inventory', 'images', 'seller')
+            .order_by('product_code')
+        )
+
+        for product in products:
+            handle = _slugify_handle(product.product_code)
+            vendor = f"Wikala - {product.seller.business_name}" if product.seller else "Wikala"
+            body = product.description_en or ''
+            category_name = product.category.name_en if product.category else ''
+            price = str(product.price)
+
+            variants = [v for v in product.variants.all() if v.sku and v.sku.strip()]
+
+            images = sorted(
+                product.images.all(),
+                key=lambda im: (not im.is_primary, im.order or 0)
+            )
+            image_urls = [im.image_url for im in images if im.image_url]
+
+            if not variants:
+                continue
+
+            has_variants = not (len(variants) == 1 and not variants[0].color and not variants[0].size)
+
+            first_row = True
+            img_index = 0
+
+            for v in variants:
+                try:
+                    qty = v.inventory.quantity_in_germany
+                except Exception:
+                    qty = 0
+
+                if has_variants:
+                    opt1_name, opt1_val = 'Color', (v.color or '-')
+                    opt2_name, opt2_val = ('Size', v.size) if v.size else ('', '')
+                else:
+                    opt1_name, opt1_val = 'Title', 'Default Title'
+                    opt2_name, opt2_val = '', ''
+
+                row = {
+                    'Handle': handle,
+                    'Title': product.name_en if first_row else '',
+                    'Body (HTML)': body if first_row else '',
+                    'Vendor': vendor if first_row else '',
+                    'Type': category_name if first_row else '',
+                    'Tags': '',
+                    'Published': 'TRUE' if first_row else '',
+                    'Option1 Name': opt1_name,
+                    'Option1 Value': opt1_val,
+                    'Option2 Name': opt2_name,
+                    'Option2 Value': opt2_val,
+                    'Option3 Name': '',
+                    'Option3 Value': '',
+                    'Variant SKU': v.sku,
+                    'Variant Grams': int((product.unit_weight_kg or 0) * 1000),
+                    'Variant Inventory Tracker': 'shopify',
+                    'Variant Inventory Qty': qty,
+                    'Variant Inventory Policy': 'deny',
+                    'Variant Fulfillment Service': 'manual',
+                    'Variant Price': price,
+                    'Variant Compare-at Price': '',
+                    'Variant Requires Shipping': 'TRUE',
+                    'Variant Taxable': 'TRUE',
+                    'Variant Barcode': v.external_barcode or '',
+                    'Image Src': image_urls[img_index] if img_index < len(image_urls) else '',
+                    'Image Alt Text': product.name_en if img_index < len(image_urls) else '',
+                }
+                writer.writerow([row[col] for col in SHOPIFY_CSV_COLUMNS])
+                first_row = False
+                if img_index < len(image_urls):
+                    img_index += 1
+
+            while img_index < len(image_urls):
+                extra = {col: '' for col in SHOPIFY_CSV_COLUMNS}
+                extra['Handle'] = handle
+                extra['Image Src'] = image_urls[img_index]
+                extra['Image Alt Text'] = product.name_en
+                writer.writerow([extra[col] for col in SHOPIFY_CSV_COLUMNS])
+                img_index += 1
+
+        return response

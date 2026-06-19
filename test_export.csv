@@ -1,0 +1,9 @@
+﻿Handle,Title,Body (HTML),Vendor,Type,Tags,Published,Option1 Name,Option1 Value,Option2 Name,Option2 Value,Option3 Name,Option3 Value,Variant SKU,Variant Grams,Variant Inventory Tracker,Variant Inventory Qty,Variant Inventory Policy,Variant Fulfillment Service,Variant Price,Variant Compare-at Price,Variant Requires Shipping,Variant Taxable,Variant Barcode,Image Src,Image Alt Text
+wkp-00002,Men's Cotton Galabeya,"100% Egyptian cotton galabeya, high quality",Wikala - متجر النسيج المصري,,,TRUE,Color,White,Size,L,,,WKP-00002-WHI-L,500,shopify,10,deny,manual,49.99,,TRUE,TRUE,,,
+wkp-00002,,,,,,,Color,White,Size,XL,,,WKP-00002-WHI-XL,500,shopify,0,deny,manual,49.99,,TRUE,TRUE,,,
+wkp-00002,,,,,,,Color,Blue,Size,L,,,WKP-00002-BLU-L,500,shopify,0,deny,manual,49.99,,TRUE,TRUE,,,
+wkp0004837013,Egyptian Cotton Towel,Premium Egyptian cotton bath towel,Wikala - Koko,,,TRUE,Color,White,,,,,WKP0004837013013,400,shopify,0,deny,manual,29.99,,TRUE,TRUE,,https://res.cloudinary.com/ds5wgelgc/image/upload/v1780569717/wikala/products/qptd5ds9xdh5aqoepsw1.webp,Egyptian Cotton Towel
+wkp0004837013,,,,,,,Color,Braun,,,,,WKP0004837013014,400,shopify,0,deny,manual,29.99,,TRUE,TRUE,,,
+wkp0006721015,Handmade Linen Scarf,Premium handmade Egyptian linen scarf,Wikala - Somki Test,,,TRUE,Color,Baige,,,,,WKP0006721015020,150,shopify,0,deny,manual,19.99,,TRUE,TRUE,,https://res.cloudinary.com/ds5wgelgc/image/upload/v1780997500/wikala/products/x7kdigub8dcqjrx6k7v1.jpg,Handmade Linen Scarf
+wkp0006721015,,,,,,,Color,White,,,,,WKP0006721015021,150,shopify,0,deny,manual,19.99,,TRUE,TRUE,,https://res.cloudinary.com/ds5wgelgc/image/upload/v1780997501/wikala/products/opj7p1oh0gt3yay6pavd.jpg,Handmade Linen Scarf
+wkp0006721015,,,,,,,,,,,,,,,,,,,,,,,,https://res.cloudinary.com/ds5wgelgc/image/upload/v1780997502/wikala/products/iqg3myo94yfve47bk2vn.webp,Handmade Linen Scarf
