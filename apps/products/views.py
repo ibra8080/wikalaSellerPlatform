@@ -337,6 +337,15 @@ class ShopifyExportView(APIView):
             .order_by('product_code')
         )
 
+        # Filter by specific IDs if provided (?ids=3,8)
+        ids_param = request.query_params.get('ids')
+        if ids_param:
+            try:
+                id_list = [int(i) for i in ids_param.split(',') if i.strip()]
+                products = products.filter(id__in=id_list)
+            except ValueError:
+                pass
+
         for product in products:
             handle = _slugify_handle(product.product_code)
             vendor = f"Wikala - {product.seller.business_name}" if product.seller else "Wikala"
