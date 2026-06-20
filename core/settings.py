@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'apps.communication',
     'apps.finance',
     'apps.contracts',
+    'apps.integrations',
 ]
 
 MIDDLEWARE = [
@@ -223,6 +224,8 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
     'ROTATE_REFRESH_TOKENS': True,
 }
+
+SHOPIFY_WEBHOOK_SECRET = os.environ.get('SHOPIFY_WEBHOOK_SECRET', '')
 
 # ── Security Headers (production only) ──
 if not DEBUG:

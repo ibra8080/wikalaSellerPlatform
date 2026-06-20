@@ -123,6 +123,7 @@ class Notification(models.Model):
         STATEMENT_READY = 'statement_ready', 'Statement Ready'
         SELLER_APPROVED = 'seller_approved', 'Seller Approved'
         SELLER_REJECTED = 'seller_rejected', 'Seller Rejected'
+        UNMATCHED_SALE = 'unmatched_sale', 'Unmatched Sale'
 
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='notifications'
