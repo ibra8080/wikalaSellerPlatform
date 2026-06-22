@@ -19,6 +19,10 @@ from .views import (
     StatementAcceptView, StatementDisputeView,
     AdminStatementDisputeResolveView,
 )
+from .stats_views import (
+    SellerSalesStatsView, AdminSalesStatsView,
+    SellerSalesListView, AdminSalesListView,
+)
 
 urlpatterns = [
     # General
@@ -30,6 +34,8 @@ urlpatterns = [
     path('statements/<int:pk>/accept/', StatementAcceptView.as_view(), name='statement-accept'),
     path('statements/<int:pk>/dispute/', StatementDisputeView.as_view(), name='statement-dispute'),
     path('sales/', SaleRecordListView.as_view(), name='sale-records'),
+    path('sales/stats/', SellerSalesStatsView.as_view(), name='seller-sales-stats'),
+    path('sales/list/', SellerSalesListView.as_view(), name='seller-sales-list'),
     path('services/', WebServiceListView.as_view(), name='service-list'),
     path('services/<int:service_id>/activate/', SellerActivateServiceView.as_view(), name='seller-activate-service'),
     path('charges/', SellerChargesListView.as_view(), name='seller-charges'),
@@ -47,6 +53,8 @@ urlpatterns = [
     path('admin/statements/<int:statement_id>/line-items/<int:pk>/', StatementLineItemDetailView.as_view(), name='statement-line-item-detail'),
     path('admin/statements/<int:pk>/disputes/<int:dispute_id>/resolve/', AdminStatementDisputeResolveView.as_view(), name='statement-dispute-resolve'),
     path('admin/sales/', AdminSaleRecordCreateView.as_view(), name='admin-sale-create'),
+    path('admin/sales/stats/', AdminSalesStatsView.as_view(), name='admin-sales-stats'),
+    path('admin/sales/list/', AdminSalesListView.as_view(), name='admin-sales-list'),
     path('admin/services/', AdminWebServiceListCreateView.as_view(), name='admin-service-list'),
     path('admin/services/<int:pk>/', AdminWebServiceDetailView.as_view(), name='admin-service-detail'),
     path('admin/codes/', AdminDiscountCodeListCreateView.as_view(), name='admin-code-list'),
