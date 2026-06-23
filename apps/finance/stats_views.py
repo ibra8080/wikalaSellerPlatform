@@ -11,7 +11,7 @@ from rest_framework import generics, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
-from .models import SaleRecord
+from .models import SaleRecord, SellerStatement
 from .serializers import SaleRecordSerializer
 from apps.sellers.views import IsSeller, IsAdmin
 
@@ -108,6 +108,16 @@ def _build_stats(qs, include_per_seller=False):
     return stats
 
 
+def _sellers_payout(year=None):
+    """Yearly payout totals: paid (status=paid) vs pending (sent + accepted)."""
+    if year is None:
+        year = date.today().year
+    qs = SellerStatement.objects.filter(period_end__year=year)
+    paid = qs.filter(status='paid').aggregate(t=Sum('net_amount'))['t'] or 0
+    pending = qs.filter(status__in=['sent', 'accepted']).aggregate(t=Sum('net_amount'))['t'] or 0
+    return {'paid': float(paid), 'pending': float(pending)}
+
+
 # ──────────────────────────────────────
 # Stats endpoints
 # ──────────────────────────────────────
@@ -125,7 +135,9 @@ class AdminSalesStatsView(APIView):
 
     def get(self, request):
         qs = SaleRecord.objects.all()
-        return Response(_build_stats(qs, include_per_seller=True))
+        stats = _build_stats(qs, include_per_seller=True)
+        stats['sellers_payout'] = _sellers_payout()
+        return Response(stats)
 
 
 # ──────────────────────────────────────
