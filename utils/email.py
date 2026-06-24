@@ -186,3 +186,67 @@ def send_shipment_request_accepted(shipment_request):
         })
     except Exception as e:
         print(f"Email error: {e}")
+
+# ────────────────────────────────────────
+# Widerruf (§ 356a BGB)
+# ────────────────────────────────────────
+
+WIDERRUF_ADMIN_EMAIL = 'info@wikala.net'
+
+
+def send_widerruf_admin_notification(widerruf):
+    """Notify admin that a new Widerruf request was received."""
+    try:
+        resend.Emails.send({
+            'from': FROM_EMAIL,
+            'to': WIDERRUF_ADMIN_EMAIL,
+            'subject': f'Neuer Widerruf — Bestellung {widerruf.bestellnummer}',
+            'html': f'''
+                <div>
+                    <h2>Neuer Widerruf eingegangen</h2>
+                    <p><strong>Name:</strong> {widerruf.name}</p>
+                    <p><strong>E-Mail:</strong> {widerruf.email}</p>
+                    <p><strong>Bestellnummer:</strong> {widerruf.bestellnummer}</p>
+                    <p><strong>Eingegangen am:</strong> {widerruf.created_at:%d.%m.%Y %H:%M:%S} UTC</p>
+                    <p><strong>Erklärung des Kunden:</strong></p>
+                    <p>{widerruf.widerrufserklaerung or '(keine)'}</p>
+                    <hr>
+                    <p style="color:#888;font-size:12px;">Datensatz-ID: {widerruf.id}</p>
+                </div>
+            '''
+        })
+    except Exception as e:
+        print(f"Widerruf admin email error: {e}")
+
+
+def send_widerruf_customer_confirmation(widerruf):
+    """
+    Send the customer an automatic Eingangsbestätigung (receipt confirmation).
+    LEGAL: Confirms RECEIPT only, not acceptance/validity of the withdrawal.
+    Must include the customer's declaration content and the exact timestamp.
+    """
+    try:
+        resend.Emails.send({
+            'from': FROM_EMAIL,
+            'to': widerruf.email,
+            'subject': f'Eingangsbestätigung Ihres Widerrufs — Bestellung {widerruf.bestellnummer}',
+            'html': f'''
+                <div>
+                    <h2>Eingangsbestätigung</h2>
+                    <p>Sehr geehrte/r {widerruf.name},</p>
+                    <p>wir bestätigen den Eingang Ihrer Widerrufserklärung zu folgender Bestellung:</p>
+                    <p><strong>Bestellnummer:</strong> {widerruf.bestellnummer}</p>
+                    <p><strong>Eingegangen am:</strong> {widerruf.created_at:%d.%m.%Y um %H:%M:%S} Uhr (UTC)</p>
+                    <p><strong>Inhalt Ihrer Erklärung:</strong></p>
+                    <p>{widerruf.widerrufserklaerung or '(ohne zusätzliche Angaben)'}</p>
+                    <hr>
+                    <p style="color:#555;font-size:13px;">
+                        Diese E-Mail bestätigt ausschließlich den Eingang Ihrer Erklärung.
+                        Über die weitere Bearbeitung informieren wir Sie gesondert.
+                    </p>
+                    <p>Mit freundlichen Grüßen<br>Ihr Wikala-Team</p>
+                </div>
+            '''
+        })
+    except Exception as e:
+        print(f"Widerruf customer email error: {e}")

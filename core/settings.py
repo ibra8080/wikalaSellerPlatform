@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'apps.finance',
     'apps.contracts',
     'apps.integrations',
+    'apps.legal',
 ]
 
 MIDDLEWARE = [
