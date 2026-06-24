@@ -34,45 +34,65 @@ def _aggregate(qs):
     }
 
 
-def _monthly_series(qs, months=12):
-    """Revenue + order count grouped by month, last `months` months."""
-    start = (date.today().replace(day=1) - timedelta(days=365))
+def _monthly_series(qs, year=None):
+    """Revenue + order count for every month of the current year (Jan–Dec).
+    Months with no sales return zero (no gaps)."""
+    from datetime import date
+    if year is None:
+        year = date.today().year
+
     rows = (
-        qs.filter(sale_date__gte=start)
+        qs.filter(sale_date__year=year)
         .annotate(m=TruncMonth('sale_date'))
         .values('m')
         .annotate(orders=Count('id'), revenue=Sum('total_amount'))
-        .order_by('m')
     )
-    return [
-        {
-            'month': r['m'].strftime('%Y-%m'),
-            'orders': r['orders'],
-            'revenue': float(r['revenue'] or 0),
-        }
-        for r in rows
-    ]
+    by_month = {r['m'].month: r for r in rows}
+
+    series = []
+    for month in range(1, 13):
+        r = by_month.get(month)
+        series.append({
+            'month': f'{year}-{month:02d}',
+            'orders': r['orders'] if r else 0,
+            'revenue': float(r['revenue']) if r and r['revenue'] else 0.0,
+        })
+    return series
 
 
 def _daily_series(qs):
-    """Revenue + order count per day for the current month."""
+    """Revenue + order count for every day of the current month (1 → last day).
+    Days with no sales return zero. Future days flagged. Weekends flagged."""
+    import calendar
+    from datetime import date
+
     today = date.today()
-    start = today.replace(day=1)
+    year, month = today.year, today.month
+    days_in_month = calendar.monthrange(year, month)[1]
+
     rows = (
-        qs.filter(sale_date__gte=start, sale_date__lte=today)
+        qs.filter(sale_date__year=year, sale_date__month=month)
         .annotate(d=TruncDay('sale_date'))
         .values('d')
         .annotate(orders=Count('id'), revenue=Sum('total_amount'))
-        .order_by('d')
     )
-    return [
-        {
-            'day': r['d'].strftime('%Y-%m-%d'),
-            'orders': r['orders'],
-            'revenue': float(r['revenue'] or 0),
-        }
-        for r in rows
-    ]
+    by_day = {r['d'].day: r for r in rows}
+
+    series = []
+    for day in range(1, days_in_month + 1):
+        d = date(year, month, day)
+        r = by_day.get(day)
+        is_weekend = d.weekday() >= 5
+        is_future = day > today.day
+        series.append({
+            'day': d.strftime('%Y-%m-%d'),
+            'day_num': day,
+            'orders': 0 if is_future else (r['orders'] if r else 0),
+            'revenue': 0.0 if is_future else (float(r['revenue']) if r and r['revenue'] else 0.0),
+            'is_weekend': is_weekend,
+            'is_future': is_future,
+        })
+    return series
 
 
 def _build_stats(qs, include_per_seller=False):
