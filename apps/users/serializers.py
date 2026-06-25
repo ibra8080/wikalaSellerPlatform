@@ -1,6 +1,18 @@
+import unicodedata
+
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
 from .models import User
+
+
+def clean_text(value):
+    """Strip whitespace and remove invisible/directional control chars
+    (RTL/LTR marks, zero-width chars) that mobile/Arabic keyboards inject."""
+    if not isinstance(value, str):
+        return value
+    # Remove Unicode 'format' category chars (Cf) — RLM, LRM, ZWSP, embeds, etc.
+    value = ''.join(ch for ch in value if unicodedata.category(ch) != 'Cf')
+    return value.strip()
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -44,7 +56,7 @@ from apps.sellers.models import SellerProfile
 
 class FullRegisterSerializer(serializers.Serializer):
     # User fields
-    email = serializers.EmailField()
+    email = serializers.CharField()
     username = serializers.CharField()
     password = serializers.CharField(write_only=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True)
@@ -57,6 +69,19 @@ class FullRegisterSerializer(serializers.Serializer):
     city = serializers.CharField(allow_blank=True, required=False)
     exported_before = serializers.BooleanField(required=False, default=False)
     referral_source = serializers.CharField(allow_blank=True, required=False)
+
+    def validate_email(self, value):
+        value = clean_text(value).lower()
+        from django.core.validators import validate_email as dj_validate_email
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        try:
+            dj_validate_email(value)
+        except DjangoValidationError:
+            raise serializers.ValidationError('Enter a valid email address.')
+        return value
+
+    def validate_username(self, value):
+        return clean_text(value)
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:

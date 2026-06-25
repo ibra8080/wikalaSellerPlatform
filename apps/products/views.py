@@ -48,7 +48,7 @@ class ProductListCreateView(generics.ListCreateAPIView):
         ).order_by('-created_at')
 
 
-class ProductDetailView(generics.RetrieveUpdateAPIView):
+class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated, IsSeller]
     serializer_class = ProductSerializer
 
@@ -85,6 +85,17 @@ class ProductDetailView(generics.RetrieveUpdateAPIView):
             )
         else:
             serializer.save()
+
+    def perform_destroy(self, instance):
+        # Seller may only delete products that are still in draft.
+        # Anything past draft (pending_review, approved, in shipping, listed)
+        # has financial/legal/operational records attached and must go to admin.
+        if instance.status != 'draft':
+            raise ValidationError(
+                'Only draft products can be deleted. '
+                'To remove an active product, please contact admin.'
+            )
+        instance.delete()
 
 
 # ──────────────────────────────────────
