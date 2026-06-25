@@ -42,7 +42,7 @@ class Product(models.Model):
 
     # Descriptions
     description_ar = models.TextField()
-    description_en = models.TextField()
+    description_en = models.TextField(blank=True)
     description_de = models.TextField(blank=True)
 
     # Marketing descriptions
