@@ -191,7 +191,7 @@ def send_shipment_request_accepted(shipment_request):
 # Widerruf (§ 356a BGB)
 # ────────────────────────────────────────
 
-WIDERRUF_ADMIN_EMAIL = 'info@wikala.net'
+WIDERRUF_ADMIN_EMAIL = 'wikala.market@gmail.com'
 
 
 def send_widerruf_admin_notification(widerruf):
