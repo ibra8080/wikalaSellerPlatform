@@ -50,6 +50,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'materials', 'brand_name', 'model_number', 'custom_specs',
             'keywords', 'category', 'price', 'production_cost',
             'unit_weight_kg', 'unit_length_cm', 'unit_width_cm', 'unit_height_cm',
+            'inner_weight_kg', 'inner_length_cm', 'inner_width_cm', 'inner_height_cm',
             'units_per_carton', 'carton_weight_kg',
             'carton_length_cm', 'carton_width_cm', 'carton_height_cm',
             'has_care_label', 'status', 'rejection_reason', 'previous_status',
@@ -79,6 +80,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
             'materials', 'brand_name', 'model_number', 'custom_specs',
             'keywords', 'category', 'price', 'production_cost',
             'unit_weight_kg', 'unit_length_cm', 'unit_width_cm', 'unit_height_cm',
+            'inner_weight_kg', 'inner_length_cm', 'inner_width_cm', 'inner_height_cm',
             'units_per_carton', 'carton_weight_kg',
             'carton_length_cm', 'carton_width_cm', 'carton_height_cm',
             'has_care_label', 'variants', 'images', 'certifications'

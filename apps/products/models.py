@@ -77,6 +77,20 @@ class Product(models.Model):
         max_digits=6, decimal_places=2, null=True, blank=True
     )
 
+    # Inner packaging dimensions (per unit, in its individual box)
+    inner_weight_kg = models.DecimalField(
+        max_digits=6, decimal_places=3, null=True, blank=True
+    )
+    inner_length_cm = models.DecimalField(
+        max_digits=6, decimal_places=2, null=True, blank=True
+    )
+    inner_width_cm = models.DecimalField(
+        max_digits=6, decimal_places=2, null=True, blank=True
+    )
+    inner_height_cm = models.DecimalField(
+        max_digits=6, decimal_places=2, null=True, blank=True
+    )
+
     # Carton dimensions
     units_per_carton = models.IntegerField(null=True, blank=True)
     carton_weight_kg = models.DecimalField(
