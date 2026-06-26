@@ -67,7 +67,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
     variants = ProductVariantSerializer(many=True, required=False)
     images = ProductImageSerializer(many=True, required=False)
     certifications = CertificationSerializer(many=True, required=False)
-    description_en = serializers.CharField(required=False, allow_blank=True)
+    description_ar = serializers.CharField(required=False, allow_blank=True)
     description_de = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:

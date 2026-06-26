@@ -41,8 +41,8 @@ class Product(models.Model):
     name_de = models.CharField(max_length=200, blank=True)
 
     # Descriptions
-    description_ar = models.TextField()
-    description_en = models.TextField(blank=True)
+    description_ar = models.TextField(blank=True)
+    description_en = models.TextField()
     description_de = models.TextField(blank=True)
 
     # Marketing descriptions
