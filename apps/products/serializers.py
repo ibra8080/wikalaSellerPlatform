@@ -39,6 +39,7 @@ class ProductSerializer(serializers.ModelSerializer):
     variants = ProductVariantSerializer(many=True, read_only=True)
     certifications = CertificationSerializer(many=True, read_only=True)
     seller_name = serializers.CharField(source='seller.business_name', read_only=True)
+    category_name = serializers.CharField(source='category.name_en', read_only=True)
 
     class Meta:
         model = Product
@@ -48,7 +49,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'description_ar', 'description_en', 'description_de',
             'marketing_desc_ar', 'marketing_desc_en', 'marketing_desc_de',
             'materials', 'brand_name', 'model_number', 'custom_specs',
-            'keywords', 'category', 'price', 'production_cost',
+            'keywords', 'category', 'category_name', 'price', 'production_cost',
             'unit_weight_kg', 'unit_length_cm', 'unit_width_cm', 'unit_height_cm',
             'inner_weight_kg', 'inner_length_cm', 'inner_width_cm', 'inner_height_cm',
             'units_per_carton', 'carton_weight_kg',
