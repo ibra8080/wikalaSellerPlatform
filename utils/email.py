@@ -27,6 +27,27 @@ def send_seller_approved(seller):
         print(f"Email error: {e}")
 
 
+def send_seller_registration_received(seller):
+    try:
+        resend.Emails.send({
+            'from': FROM_EMAIL,
+            'to': seller.user.email,
+            'subject': 'We received your Wikala seller application ✓',
+            'html': f'''
+                <div>
+                    <h2>Hello {seller.full_name},</h2>
+                    <p>Thank you for applying to become a seller on Wikala. We have successfully received your application.</p>
+                    <p>Our team will review it and get back to you by email within 2–3 business days.</p>
+                    <p>No action is needed from you at this time.</p>
+                    <br>
+                    <p>The Wikala Team</p>
+                </div>
+            '''
+        })
+    except Exception as e:
+        print(f"Email error: {e}")
+
+
 def send_seller_rejected(seller):
     try:
         resend.Emails.send({

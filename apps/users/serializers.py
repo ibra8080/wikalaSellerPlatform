@@ -103,7 +103,7 @@ class FullRegisterSerializer(serializers.Serializer):
             password=validated_data['password'],
             role=User.Role.SELLER,
         )
-        SellerProfile.objects.create(
+        seller = SellerProfile.objects.create(
             user=user,
             full_name=validated_data['full_name'],
             business_name=validated_data['business_name'],
@@ -114,6 +114,8 @@ class FullRegisterSerializer(serializers.Serializer):
             exported_before=validated_data.get('exported_before', False),
             referral_source=validated_data.get('referral_source', ''),
         )
+        from utils.email import send_seller_registration_received
+        send_seller_registration_received(seller)
         return user
 
     def to_representation(self, instance):
