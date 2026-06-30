@@ -312,6 +312,40 @@ import re
 from django.http import HttpResponse
 
 
+def validate_product_for_listing(product):
+    """
+    Returns a list of human-readable issues that block a product from being
+    exported/listed on Shopify. Empty list = product is complete.
+    Critical fields (1-5) that break the Shopify storefront if missing.
+    """
+    issues = []
+
+    # 1. English description (maps to Shopify Body HTML)
+    if not (product.description_en or '').strip():
+        issues.append('Missing English description')
+
+    # 2. At least one image
+    if not product.images.exists():
+        issues.append('No product image')
+
+    # 3. Valid price
+    if product.price is None or product.price <= 0:
+        issues.append('Missing or invalid price')
+
+    # 4. Category (maps to Shopify Type / Collection)
+    if product.category is None:
+        issues.append('No category selected')
+
+    # 5. At least one variant with a valid SKU
+    has_valid_variant = product.variants.filter(
+        sku__isnull=False
+    ).exclude(sku='').exists()
+    if not has_valid_variant:
+        issues.append('No variant with a valid SKU')
+
+    return issues
+
+
 def _slugify_handle(product_code):
     handle = (product_code or '').lower().strip()
     handle = re.sub(r'[^a-z0-9]+', '-', handle)
@@ -334,20 +368,13 @@ class ShopifyExportView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsAdmin]
 
     def get(self, request):
-        response = HttpResponse(content_type='text/csv; charset=utf-8')
-        response['Content-Disposition'] = 'attachment; filename="wikala_shopify_export.csv"'
-        response.write('﻿')
-
-        writer = csv.writer(response)
-        writer.writerow(SHOPIFY_CSV_COLUMNS)
-
+        # Build the queryset first (approved + listed only)
         products = (
             Product.objects
             .filter(status__in=['listed', 'approved'])
             .prefetch_related('variants__inventory', 'images', 'seller')
             .order_by('product_code')
         )
-
         # Filter by specific IDs if provided (?ids=3,8)
         ids_param = request.query_params.get('ids')
         if ids_param:
@@ -356,6 +383,36 @@ class ShopifyExportView(APIView):
                 products = products.filter(id__in=id_list)
             except ValueError:
                 pass
+
+        products = list(products)
+
+        # Strict validation gate: refuse the WHOLE export if ANY product is incomplete
+        blocking = []
+        for product in products:
+            issues = validate_product_for_listing(product)
+            if issues:
+                blocking.append({
+                    'id': product.id,
+                    'name': product.name_en or product.name_ar or f'Product {product.id}',
+                    'product_code': product.product_code or '—',
+                    'issues': issues,
+                })
+        if blocking:
+            return Response(
+                {
+                    'error': 'export_blocked',
+                    'message': 'Some selected products are incomplete and cannot be exported. Fix the issues below and try again.',
+                    'products': blocking,
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # All good — now build the CSV response
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename="wikala_shopify_export.csv"'
+        response.write('﻿')
+        writer = csv.writer(response)
+        writer.writerow(SHOPIFY_CSV_COLUMNS)
 
         for product in products:
             handle = _slugify_handle(product.product_code)
