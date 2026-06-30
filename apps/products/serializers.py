@@ -40,6 +40,11 @@ class ProductSerializer(serializers.ModelSerializer):
     certifications = CertificationSerializer(many=True, read_only=True)
     seller_name = serializers.CharField(source='seller.business_name', read_only=True)
     category_name = serializers.CharField(source='category.name_en', read_only=True)
+    validation_issues = serializers.SerializerMethodField()
+
+    def get_validation_issues(self, obj):
+        from apps.products.views import validate_product_for_listing
+        return validate_product_for_listing(obj)
 
     class Meta:
         model = Product
@@ -56,7 +61,8 @@ class ProductSerializer(serializers.ModelSerializer):
             'carton_length_cm', 'carton_width_cm', 'carton_height_cm',
             'has_care_label', 'status', 'rejection_reason', 'previous_status',
             'shopify_product_id', 'approved_at', 'listed_at', 'created_at',
-            'images', 'variants', 'certifications'
+            'images', 'variants', 'certifications',
+            'validation_issues'
         )
         read_only_fields = (
             'product_code', 'seller',
