@@ -491,4 +491,57 @@ class ShopifyExportView(APIView):
                 writer.writerow([extra[col] for col in SHOPIFY_CSV_COLUMNS])
                 img_index += 1
 
+
+class AdminBulkStatusView(APIView):
+    """
+    Bulk transition products between 'approved' and 'listed'.
+    - to_listed: approved → listed (validates completeness first, sets listed_at)
+    - to_approved: listed → approved (status only, NEVER regenerates product_code/SKU)
+    """
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+
+    def post(self, request):
+        ids = request.data.get('ids', [])
+        action = request.data.get('action')  # 'to_listed' or 'to_approved'
+
+        if not ids or action not in ('to_listed', 'to_approved'):
+            return Response(
+                {'error': 'Provide "ids" and a valid "action" (to_listed | to_approved).'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if action == 'to_listed':
+            products = list(
+                Product.objects.filter(id__in=ids, status='approved')
+                .prefetch_related('variants', 'images')
+            )
+            blocking = []
+            for product in products:
+                issues = validate_product_for_listing(product)
+                if issues:
+                    blocking.append({
+                        'id': product.id,
+                        'name': product.name_en or product.name_ar or f'Product {product.id}',
+                        'issues': issues,
+                    })
+            if blocking:
+                return Response(
+                    {
+                        'error': 'listing_blocked',
+                        'message': 'Some products are incomplete and cannot be listed.',
+                        'products': blocking,
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            listed_ids = [p.id for p in products]
+            Product.objects.filter(id__in=listed_ids).update(
+                status='listed', listed_at=timezone.now()
+            )
+            return Response({'updated': len(listed_ids), 'action': 'to_listed'})
+
+        else:  # to_approved
+            qs = Product.objects.filter(id__in=ids, status='listed')
+            count = qs.update(status='approved')
+            return Response({'updated': count, 'action': 'to_approved'})
+
         return response

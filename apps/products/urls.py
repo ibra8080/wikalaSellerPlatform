@@ -8,6 +8,7 @@ from .views import (
     ProductVariantDetailView, ProductImageDeleteView,
     AdminProductDeleteView,
     ShopifyExportView,
+    AdminBulkStatusView,
 )
 
 urlpatterns = [
@@ -27,4 +28,5 @@ urlpatterns = [
     path('admin/<int:pk>/', AdminProductDetailView.as_view(), name='admin-product-detail'),
     path('admin/<int:pk>/delete/', AdminProductDeleteView.as_view(), name='admin-product-delete'),
     path('admin/shopify-export/', ShopifyExportView.as_view(), name='shopify-export'),
+    path('admin/bulk-status/', AdminBulkStatusView.as_view(), name='admin-bulk-status'),
 ]
