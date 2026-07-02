@@ -118,9 +118,13 @@ class AdminProductDetailView(generics.RetrieveUpdateAPIView):
         new_status = self.request.data.get('status')
 
         if new_status == 'approved' and instance.previous_status:
-            # Re-approving after re-review: restore previous status
+            # Re-approving after re-review.
+            # If it was LISTED, send it back to 'approved' (NOT listed) so the admin
+            # must re-export the updated data to Shopify before it goes live again.
+            # Any other previous status is restored as-is.
+            restored_status = 'approved' if instance.previous_status == 'listed' else instance.previous_status
             serializer.save(
-                status=instance.previous_status,
+                status=restored_status,
                 previous_status=''
             )
             send_product_approved(instance)
