@@ -125,3 +125,43 @@ class FullRegisterSerializer(serializers.Serializer):
             'username': instance.username,
             'message': 'Registration successful',
         }
+
+
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_decode
+from django.utils.encoding import force_str
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+    def validate_email(self, value):
+        return clean_text(value).lower()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    uid = serializers.CharField(required=True)
+    token = serializers.CharField(required=True)
+    password = serializers.CharField(
+        write_only=True, required=True, validators=[validate_password]
+    )
+    password2 = serializers.CharField(write_only=True, required=True)
+
+    def validate(self, attrs):
+        if attrs['password'] != attrs['password2']:
+            raise serializers.ValidationError(
+                {'password2': 'Passwords do not match.'}
+            )
+        try:
+            uid = force_str(urlsafe_base64_decode(attrs['uid']))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            raise serializers.ValidationError(
+                {'uid': 'Invalid reset link.'}
+            )
+        if not default_token_generator.check_token(user, attrs['token']):
+            raise serializers.ValidationError(
+                {'token': 'This reset link is invalid or has expired.'}
+            )
+        attrs['user'] = user
+        return attrs

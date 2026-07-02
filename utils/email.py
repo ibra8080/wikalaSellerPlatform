@@ -242,6 +242,29 @@ def send_widerruf_admin_notification(widerruf):
         print(f"Widerruf admin email error: {e}")
 
 
+def send_password_reset(user, reset_url):
+    try:
+        resend.Emails.send({
+            'from': FROM_EMAIL,
+            'to': user.email,
+            'subject': 'إعادة تعيين كلمة المرور — وكالة',
+            'html': f'''
+                <div dir="rtl">
+                    <h2>مرحباً،</h2>
+                    <p>وصلنا طلب لإعادة تعيين كلمة المرور لحسابك في وكالة.</p>
+                    <p>اضغط على الرابط التالي لتعيين كلمة مرور جديدة:</p>
+                    <p><a href="{reset_url}">إعادة تعيين كلمة المرور</a></p>
+                    <p>هذا الرابط صالح لمدة 3 أيام.</p>
+                    <p>إذا لم تطلب ذلك، تجاهل هذه الرسالة — كلمة مرورك لن تتغير.</p>
+                    <br>
+                    <p>فريق وكالة</p>
+                </div>
+            '''
+        })
+    except Exception as e:
+        print(f"Email error: {e}")
+
+
 def send_widerruf_customer_confirmation(widerruf):
     """
     Send the customer an automatic Eingangsbestätigung (receipt confirmation).

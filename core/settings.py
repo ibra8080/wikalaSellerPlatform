@@ -176,6 +176,7 @@ REST_FRAMEWORK = {
         'user': '1000/hour',
         'login': '10/hour',
         'register': '5/hour',
+        'password_reset': '5/hour',
     },
 }
 
