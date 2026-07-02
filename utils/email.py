@@ -247,17 +247,17 @@ def send_password_reset(user, reset_url):
         resend.Emails.send({
             'from': FROM_EMAIL,
             'to': user.email,
-            'subject': 'إعادة تعيين كلمة المرور — وكالة',
+            'subject': 'Reset your Wikala password',
             'html': f'''
-                <div dir="rtl">
-                    <h2>مرحباً،</h2>
-                    <p>وصلنا طلب لإعادة تعيين كلمة المرور لحسابك في وكالة.</p>
-                    <p>اضغط على الرابط التالي لتعيين كلمة مرور جديدة:</p>
-                    <p><a href="{reset_url}">إعادة تعيين كلمة المرور</a></p>
-                    <p>هذا الرابط صالح لمدة 3 أيام.</p>
-                    <p>إذا لم تطلب ذلك، تجاهل هذه الرسالة — كلمة مرورك لن تتغير.</p>
+                <div>
+                    <h2>Hello,</h2>
+                    <p>We received a request to reset the password for your Wikala account.</p>
+                    <p>Click the link below to set a new password:</p>
+                    <p><a href="{reset_url}">Reset your password</a></p>
+                    <p>This link is valid for 3 days.</p>
+                    <p>If you didn't request this, you can safely ignore this email — your password won't change.</p>
                     <br>
-                    <p>فريق وكالة</p>
+                    <p>The Wikala Team</p>
                 </div>
             '''
         })
