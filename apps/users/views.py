@@ -13,6 +13,7 @@ from .serializers import (
     FullRegisterSerializer,
     PasswordResetRequestSerializer,
     PasswordResetConfirmSerializer,
+    ChangePasswordSerializer,
 )
 from .models import User
 from apps.sellers.models import SellerProfile
@@ -105,3 +106,17 @@ class PasswordResetConfirmView(APIView):
         user.set_password(serializer.validated_data['password'])
         user.save()
         return Response({'detail': 'Password has been reset successfully.'})
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(
+            data=request.data, context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        user = request.user
+        user.set_password(serializer.validated_data['password'])
+        user.save()
+        return Response({'detail': 'Password changed successfully.'})
