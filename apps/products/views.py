@@ -313,6 +313,7 @@ class ProductImageDeleteView(generics.DestroyAPIView):
 # ============================================================
 import csv
 import re
+from html import escape as _html_escape
 from django.http import HttpResponse
 
 
@@ -348,6 +349,47 @@ def validate_product_for_listing(product):
         issues.append('No variant with a valid SKU')
 
     return issues
+
+
+def _build_body_html(product):
+    """Build Shopify Body (HTML): description + optional materials/specs block.
+    All seller-entered values are escaped; description_en is already sanitized
+    HTML from nh3, so it is inserted as-is."""
+    parts = []
+
+    desc = (product.description_en or '').strip()
+    if desc:
+        parts.append(desc)
+
+    spec_rows = []
+
+    materials = (product.materials or '').strip()
+    if materials:
+        spec_rows.append(('Material', materials))
+
+    specs = product.custom_specs or []
+    if isinstance(specs, list):
+        for item in specs:
+            if not isinstance(item, dict):
+                continue
+            key = (item.get('key') or '').strip()
+            val = (item.get('value') or '').strip()
+            if key and val:
+                spec_rows.append((key, val))
+
+    if spec_rows:
+        rows_html = ''.join(
+            f'<tr><td style="padding:4px 12px 4px 0;font-weight:600;'
+            f'vertical-align:top;">{_html_escape(k)}</td>'
+            f'<td style="padding:4px 0;">{_html_escape(v)}</td></tr>'
+            for k, v in spec_rows
+        )
+        parts.append(
+            '<h3>Specifications</h3>'
+            f'<table style="border-collapse:collapse;">{rows_html}</table>'
+        )
+
+    return ''.join(parts)
 
 
 def _slugify_handle(product_code):
@@ -421,7 +463,7 @@ class ShopifyExportView(APIView):
         for product in products:
             handle = _slugify_handle(product.product_code)
             vendor = f"Wikala - {product.seller.business_name}" if product.seller else "Wikala"
-            body = product.description_en or ''
+            body = _build_body_html(product)
             category_name = product.category.name_en if product.category else ''
             price = str(product.price)
 
