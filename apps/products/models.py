@@ -36,7 +36,7 @@ class Product(models.Model):
     product_code = models.CharField(max_length=20, unique=True, blank=True, null=True, default=None)
 
     # Names
-    name_ar = models.CharField(max_length=200)
+    name_ar = models.CharField(max_length=200, blank=True)
     name_en = models.CharField(max_length=200)
     name_de = models.CharField(max_length=200, blank=True)
 
