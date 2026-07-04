@@ -1,5 +1,20 @@
+import nh3
 from rest_framework import serializers
 from .models import Product, ProductImage, ProductVariant, Certification, ProductPromotion, Category
+
+ALLOWED_HTML_TAGS = {'p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'h3', 'a'}
+ALLOWED_HTML_ATTRS = {'a': {'href', 'title'}}
+
+
+def sanitize_html(value):
+    """Clean rich-text HTML to a safe whitelist for Shopify Body."""
+    if not value:
+        return value
+    return nh3.clean(
+        value,
+        tags=ALLOWED_HTML_TAGS,
+        attributes=ALLOWED_HTML_ATTRS,
+    )
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -77,6 +92,9 @@ class ProductCreateSerializer(serializers.ModelSerializer):
     name_ar = serializers.CharField(required=False, allow_blank=True)
     description_ar = serializers.CharField(required=False, allow_blank=True)
     description_de = serializers.CharField(required=False, allow_blank=True)
+
+    def validate_description_en(self, value):
+        return sanitize_html(value)
 
     class Meta:
         model = Product
