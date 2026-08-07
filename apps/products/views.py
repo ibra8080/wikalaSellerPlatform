@@ -64,6 +64,14 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
         if new_status:
             if not (instance.status == 'draft' and new_status == 'pending_review'):
                 data.pop('status', None)
+            elif new_status == 'pending_review':
+                # Category is required before submission — it cannot be changed
+                # after approval, so we enforce it here (backend source of truth).
+                category = data.get('category', instance.category_id)
+                if not category:
+                    raise ValidationError(
+                        {'category': 'A category is required before submitting for approval.'}
+                    )
 
         # Strip protected fields — seller cannot change these
         for field in SELLER_PROTECTED_FIELDS:
