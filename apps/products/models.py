@@ -179,8 +179,18 @@ class ProductVariant(models.Model):
                 super().save(*args, **kwargs)
                 args = ()
                 kwargs = {}
-            color_part = (self.color[:3].upper() if self.color else '').strip()
-            size_part = (self.size.upper() if self.size else '').strip()
+            # Keep only ASCII (Code128 / Shopify Handle safe). Non-Latin input
+            # (e.g. Arabic color/size) is stripped; if a part becomes empty,
+            # it's dropped and the pk fallback keeps the SKU unique.
+            def _ascii_part(value, limit=None):
+                if not value:
+                    return ''
+                cleaned = ''.join(c for c in value if c.isascii() and c.isalnum())
+                cleaned = cleaned.upper()
+                return cleaned[:limit] if limit else cleaned
+
+            color_part = _ascii_part(self.color, 3)
+            size_part = _ascii_part(self.size)
             suffix_bits = [b for b in [color_part, size_part] if b]
             if suffix_bits:
                 suffix = '-'.join(suffix_bits)
