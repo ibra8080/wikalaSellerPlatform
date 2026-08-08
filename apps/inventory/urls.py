@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import (
     SellerInventoryView, ShipmentUpdateListView,
-    AdminShipmentUpdateView, AdminInventoryDetailView,
+    AdminShipmentUpdateView, AdminInventoryDetailView, AdminInventoryListView,
     ShipmentRequestListCreateView, ShipmentRequestDetailView,
     AdminShipmentRequestListView, AdminShipmentRequestDetailView,
 )
@@ -17,6 +17,7 @@ urlpatterns = [
 
     # Admin — Inventory
     path('admin/shipment/update/', AdminShipmentUpdateView.as_view(), name='admin-shipment-update'),
+    path('admin/list/', AdminInventoryListView.as_view(), name='admin-inventory-list'),
     path('admin/<int:pk>/', AdminInventoryDetailView.as_view(), name='admin-inventory-detail'),
 
     # Admin — Shipment Requests

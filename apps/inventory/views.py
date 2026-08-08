@@ -3,7 +3,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import VariantInventory, InboundShipmentUpdate, ShipmentRequest
-from .serializers import VariantInventorySerializer, InboundShipmentUpdateSerializer, ShipmentRequestSerializer
+from .serializers import VariantInventorySerializer, InboundShipmentUpdateSerializer, ShipmentRequestSerializer, AdminVariantInventorySerializer
 from apps.sellers.views import IsSeller, IsAdmin
 from apps.products.models import Product
 from utils.email import send_shipment_updated
@@ -120,3 +120,13 @@ class AdminShipmentRequestDetailView(generics.RetrieveUpdateAPIView):
     serializer_class = ShipmentRequestSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdmin]
     queryset = ShipmentRequest.objects.all()
+
+
+class AdminInventoryListView(generics.ListAPIView):
+    serializer_class = AdminVariantInventorySerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+
+    def get_queryset(self):
+        return VariantInventory.objects.select_related(
+            'variant__product__seller'
+        ).exclude(variant__sku__isnull=True).order_by('variant__product__product_code', 'variant__sku')
