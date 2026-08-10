@@ -21,7 +21,7 @@ VALID_STATUS_TRANSITIONS = {
 
 
 class SellerInventoryView(generics.ListAPIView):
-    serializer_class = VariantInventorySerializer
+    serializer_class = AdminVariantInventorySerializer
     permission_classes = [permissions.IsAuthenticated, IsSeller]
 
     def get_queryset(self):
