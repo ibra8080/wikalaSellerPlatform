@@ -545,6 +545,8 @@ class ShopifyExportView(APIView):
                 writer.writerow([extra[col] for col in SHOPIFY_CSV_COLUMNS])
                 img_index += 1
 
+        return response
+
 
 class AdminBulkStatusView(APIView):
     """
