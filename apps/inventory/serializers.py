@@ -69,6 +69,13 @@ class AdminInventorySerializer(serializers.ModelSerializer):
         )
 
 
+class AdminBinLocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VariantInventory
+        fields = ('id', 'bin_location_egypt', 'bin_location_germany')
+        read_only_fields = ('id',)
+
+
 class InboundShipmentUpdateSerializer(serializers.ModelSerializer):
     updated_by_email = serializers.CharField(
         source='updated_by.email', read_only=True

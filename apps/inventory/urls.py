@@ -4,6 +4,7 @@ from .views import (
     AdminShipmentUpdateView, AdminInventoryDetailView, AdminInventoryListView,
     ShipmentRequestListCreateView, ShipmentRequestDetailView,
     AdminShipmentRequestListView, AdminShipmentRequestDetailView,
+    AdminBinLocationUpdateView,
 )
 
 urlpatterns = [
@@ -18,6 +19,7 @@ urlpatterns = [
     # Admin — Inventory
     path('admin/shipment/update/', AdminShipmentUpdateView.as_view(), name='admin-shipment-update'),
     path('admin/list/', AdminInventoryListView.as_view(), name='admin-inventory-list'),
+    path('admin/<int:pk>/bin-location/', AdminBinLocationUpdateView.as_view(), name='admin-bin-location'),
     path('admin/<int:pk>/', AdminInventoryDetailView.as_view(), name='admin-inventory-detail'),
 
     # Admin — Shipment Requests
