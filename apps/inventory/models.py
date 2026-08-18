@@ -11,6 +11,8 @@ class VariantInventory(models.Model):
     quantity_in_transit = models.IntegerField(default=0)
     quantity_in_germany = models.IntegerField(default=0)
     quantity_sold = models.IntegerField(default=0)
+    bin_location_egypt = models.CharField(max_length=50, blank=True, default='')
+    bin_location_germany = models.CharField(max_length=50, blank=True, default='')
     arrived_germany_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
