@@ -17,7 +17,7 @@ class VariantInventorySerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'variant', 'variant_sku', 'arrived_germany_at', 'updated_at')
 
 
-class AdminVariantInventorySerializer(serializers.ModelSerializer):
+class SellerInventorySerializer(serializers.ModelSerializer):
     quantity_available = serializers.ReadOnlyField()
     variant_sku = serializers.CharField(source='variant.sku', read_only=True)
     variant_color = serializers.CharField(source='variant.color', read_only=True)
@@ -39,6 +39,33 @@ class AdminVariantInventorySerializer(serializers.ModelSerializer):
             'id', 'variant', 'variant_sku', 'variant_color', 'variant_size',
             'product_name', 'product_code', 'seller_name',
             'arrived_germany_at', 'updated_at'
+        )
+
+
+class AdminInventorySerializer(serializers.ModelSerializer):
+    quantity_available = serializers.ReadOnlyField()
+    variant_sku = serializers.CharField(source='variant.sku', read_only=True)
+    variant_color = serializers.CharField(source='variant.color', read_only=True)
+    variant_size = serializers.CharField(source='variant.size', read_only=True)
+    product_name = serializers.CharField(source='variant.product.name_en', read_only=True)
+    product_code = serializers.CharField(source='variant.product.product_code', read_only=True)
+    seller_name = serializers.CharField(source='variant.product.seller.business_name', read_only=True)
+
+    class Meta:
+        model = VariantInventory
+        fields = (
+            'id', 'variant', 'variant_sku', 'variant_color', 'variant_size',
+            'product_name', 'product_code', 'seller_name',
+            'quantity_in_egypt', 'quantity_in_transit',
+            'quantity_in_germany', 'quantity_sold',
+            'quantity_available', 'arrived_germany_at', 'updated_at',
+            'bin_location_egypt', 'bin_location_germany',
+        )
+        read_only_fields = (
+            'id', 'variant', 'variant_sku', 'variant_color', 'variant_size',
+            'product_name', 'product_code', 'seller_name',
+            'arrived_germany_at', 'updated_at',
+            'bin_location_egypt', 'bin_location_germany',
         )
 
 

@@ -3,7 +3,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import VariantInventory, InboundShipmentUpdate, ShipmentRequest
-from .serializers import VariantInventorySerializer, InboundShipmentUpdateSerializer, ShipmentRequestSerializer, AdminVariantInventorySerializer
+from .serializers import VariantInventorySerializer, InboundShipmentUpdateSerializer, ShipmentRequestSerializer, SellerInventorySerializer, AdminInventorySerializer
 from apps.sellers.views import IsSeller, IsAdmin
 from apps.products.models import Product
 from utils.email import send_shipment_updated
@@ -21,7 +21,7 @@ VALID_STATUS_TRANSITIONS = {
 
 
 class SellerInventoryView(generics.ListAPIView):
-    serializer_class = AdminVariantInventorySerializer
+    serializer_class = SellerInventorySerializer
     permission_classes = [permissions.IsAuthenticated, IsSeller]
 
     def get_queryset(self):
@@ -123,7 +123,7 @@ class AdminShipmentRequestDetailView(generics.RetrieveUpdateAPIView):
 
 
 class AdminInventoryListView(generics.ListAPIView):
-    serializer_class = AdminVariantInventorySerializer
+    serializer_class = AdminInventorySerializer
     permission_classes = [permissions.IsAuthenticated, IsAdmin]
 
     def get_queryset(self):
