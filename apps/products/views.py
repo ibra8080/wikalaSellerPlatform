@@ -283,10 +283,10 @@ class ProductImageUploadView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Validate max images per product (10)
-        if product.images.count() >= 10:
+        # Validate max images per product (12)
+        if product.images.count() >= 12:
             return Response(
-                {'error': 'Maximum 10 images per product.'},
+                {'error': 'Maximum 12 images per product.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
