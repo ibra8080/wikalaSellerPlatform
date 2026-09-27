@@ -22,6 +22,13 @@ from decimal import Decimal
 import datetime
 
 
+def _clamp_cm(v):
+    """Storage volume floor: a dimension entered as 0<d<1 cm is treated as 1 cm
+    (prevents near-zero cartons yielding zero storage). Missing (0) stays 0."""
+    d = Decimal(str(v or 0))
+    return max(d, Decimal('1')) if d > 0 else Decimal('0')
+
+
 class FeeStructureView(generics.ListAPIView):
     serializer_class = FeeStructureSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -140,9 +147,9 @@ class StatementCalculateView(APIView):
             days    = (now - arrived).days
             months  = Decimal(str(days)) / Decimal('30')
 
-            l = Decimal(str(product.carton_length_cm or 0)) / 100
-            w = Decimal(str(product.carton_width_cm or 0)) / 100
-            h = Decimal(str(product.carton_height_cm or 0)) / 100
+            l = _clamp_cm(product.carton_length_cm) / 100
+            w = _clamp_cm(product.carton_width_cm) / 100
+            h = _clamp_cm(product.carton_height_cm) / 100
             volume_m3 = l * w * h * Decimal('1.15')
 
             units_per_carton = product.units_per_carton or 1
@@ -639,9 +646,9 @@ class StatementGenerateView(APIView):
                 arrived = arrived.replace(tzinfo=None)
             days = (now - arrived).days
             months = Decimal(str(days)) / Decimal('30')
-            l = Decimal(str(product.carton_length_cm or 0)) / 100
-            w = Decimal(str(product.carton_width_cm or 0)) / 100
-            h = Decimal(str(product.carton_height_cm or 0)) / 100
+            l = _clamp_cm(product.carton_length_cm) / 100
+            w = _clamp_cm(product.carton_width_cm) / 100
+            h = _clamp_cm(product.carton_height_cm) / 100
             volume_m3 = l * w * h * Decimal('1.15')
             units_per_carton = product.units_per_carton or 1
             num_cartons = Decimal(str(inv.quantity_in_germany)) / Decimal(str(units_per_carton))
