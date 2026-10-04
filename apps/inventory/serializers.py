@@ -147,3 +147,15 @@ class ShipmentRequestSerializer(serializers.ModelSerializer):
         for item in items_data:
             ShipmentRequestItem.objects.create(shipment_request=shipment, **item)
         return shipment
+
+    def update(self, instance, validated_data):
+        items_data = validated_data.pop('items', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        # Replace items only if provided
+        if items_data is not None:
+            instance.items.all().delete()
+            for item in items_data:
+                ShipmentRequestItem.objects.create(shipment_request=instance, **item)
+        return instance

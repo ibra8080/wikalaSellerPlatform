@@ -92,7 +92,7 @@ class ShipmentRequestListCreateView(generics.ListCreateAPIView):
         ).order_by('-created_at')
 
 
-class ShipmentRequestDetailView(generics.RetrieveDestroyAPIView):
+class ShipmentRequestDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ShipmentRequestSerializer
     permission_classes = [permissions.IsAuthenticated, IsSeller]
 
@@ -100,6 +100,12 @@ class ShipmentRequestDetailView(generics.RetrieveDestroyAPIView):
         return ShipmentRequest.objects.filter(
             seller=self.request.user.seller_profile
         )
+
+    def perform_update(self, serializer):
+        if serializer.instance.status not in ('draft',):
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError('Only draft requests can be edited.')
+        serializer.save()
 
     def perform_destroy(self, instance):
         if instance.status not in ('draft', 'cancelled'):
