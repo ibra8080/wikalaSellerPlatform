@@ -166,6 +166,22 @@ class AdminProductDetailView(generics.RetrieveUpdateAPIView):
         elif new_status == 'rejected':
             serializer.save()
             send_product_rejected(instance)
+        elif new_status == 'suspended':
+            # Suspend: remember current status so we can restore it later.
+            # (Admin manually hides it on Shopify.)
+            serializer.save(
+                status='suspended',
+                previous_status=instance.status,
+            )
+        elif new_status == 'unsuspend':
+            # Restore a suspended product to exactly what it was before.
+            # If it was 'listed' and the data changed meanwhile, the normal
+            # seller-edit rule already bumps it back to approved for re-export.
+            restored = instance.previous_status or 'approved'
+            serializer.save(
+                status=restored,
+                previous_status='',
+            )
         else:
             serializer.save()
 
