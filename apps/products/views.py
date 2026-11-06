@@ -45,6 +45,8 @@ class ProductListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         return Product.objects.filter(
             seller=self.request.user.seller_profile
+        ).select_related('seller', 'category').prefetch_related(
+            'images', 'variants', 'certifications'
         ).order_by('-created_at')
 
 
@@ -113,7 +115,9 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
 class AdminProductListView(generics.ListAPIView):
     serializer_class = ProductSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdmin]
-    queryset = Product.objects.all().order_by('-created_at')
+    queryset = Product.objects.all().select_related(
+        'seller', 'category'
+    ).prefetch_related('images', 'variants', 'certifications').order_by('-created_at')
 
 
 class AdminProductDetailView(generics.RetrieveUpdateAPIView):
@@ -338,7 +342,7 @@ def validate_product_for_listing(product):
         issues.append('Missing English description')
 
     # 2. At least one image
-    if not product.images.exists():
+    if not product.images.all():
         issues.append('No product image')
 
     # 3. Valid price
@@ -350,9 +354,7 @@ def validate_product_for_listing(product):
         issues.append('No category selected')
 
     # 5. At least one variant with a valid SKU
-    has_valid_variant = product.variants.filter(
-        sku__isnull=False
-    ).exclude(sku='').exists()
+    has_valid_variant = any(v.sku for v in product.variants.all())
     if not has_valid_variant:
         issues.append('No variant with a valid SKU')
 
