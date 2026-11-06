@@ -137,6 +137,18 @@ class AdminProductDetailView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated, IsAdmin]
     queryset = Product.objects.all()
 
+    def update(self, request, *args, **kwargs):
+        if request.data.get('status') == 'unsuspend':
+            instance = self.get_object()
+            restored = instance.previous_status or 'approved'
+            # Restore directly, bypassing the status-transition branches.
+            instance.status = restored
+            instance.previous_status = ''
+            instance.save(update_fields=['status', 'previous_status'])
+            serializer = self.get_serializer(instance)
+            return Response(serializer.data)
+        return super().update(request, *args, **kwargs)
+
     def perform_update(self, serializer):
         instance = self.get_object()
         new_status = self.request.data.get('status')
