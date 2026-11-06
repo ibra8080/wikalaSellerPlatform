@@ -1,4 +1,5 @@
 from rest_framework import generics, permissions, status
+from rest_framework import filters
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -38,6 +39,10 @@ class CategoryListView(generics.ListAPIView):
 class ProductListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated, IsSeller]
     pagination_class = ProductPagination
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name_en', 'name_ar', 'product_code', 'variants__sku']
+    ordering_fields = ['created_at', 'price', 'name_en']
+    ordering = ['-created_at']
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -49,7 +54,7 @@ class ProductListCreateView(generics.ListCreateAPIView):
             seller=self.request.user.seller_profile
         ).select_related('seller', 'category').prefetch_related(
             'images', 'variants', 'certifications'
-        ).order_by('-created_at')
+        ).distinct().order_by('-created_at')
 
 
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -118,9 +123,13 @@ class AdminProductListView(generics.ListAPIView):
     serializer_class = ProductSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdmin]
     pagination_class = ProductPagination
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name_en', 'name_ar', 'product_code', 'variants__sku']
+    ordering_fields = ['created_at', 'price', 'name_en']
+    ordering = ['-created_at']
     queryset = Product.objects.all().select_related(
         'seller', 'category'
-    ).prefetch_related('images', 'variants', 'certifications').order_by('-created_at')
+    ).prefetch_related('images', 'variants', 'certifications').distinct().order_by('-created_at')
 
 
 class AdminProductDetailView(generics.RetrieveUpdateAPIView):
