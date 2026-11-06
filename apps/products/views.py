@@ -6,6 +6,7 @@ from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from .models import Product, ProductVariant, ProductImage, Certification, ProductPromotion, Category
+from .pagination import ProductPagination
 from .serializers import (
     ProductSerializer, ProductCreateSerializer, CategorySerializer,
     ProductVariantSerializer, CertificationSerializer, ProductPromotionSerializer,
@@ -36,6 +37,7 @@ class CategoryListView(generics.ListAPIView):
 
 class ProductListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated, IsSeller]
+    pagination_class = ProductPagination
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -115,6 +117,7 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
 class AdminProductListView(generics.ListAPIView):
     serializer_class = ProductSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    pagination_class = ProductPagination
     queryset = Product.objects.all().select_related(
         'seller', 'category'
     ).prefetch_related('images', 'variants', 'certifications').order_by('-created_at')
