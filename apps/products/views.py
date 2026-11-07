@@ -124,12 +124,29 @@ class AdminProductListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated, IsAdmin]
     pagination_class = ProductPagination
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['name_en', 'name_ar', 'product_code', 'variants__sku']
+    search_fields = ['name_en', 'name_ar', 'product_code', 'variants__sku', 'seller__business_name']
     ordering_fields = ['created_at', 'price', 'name_en']
     ordering = ['-created_at']
-    queryset = Product.objects.all().select_related(
-        'seller', 'category'
-    ).prefetch_related('images', 'variants', 'certifications').distinct().order_by('-created_at')
+
+    def get_queryset(self):
+        qs = Product.objects.all().select_related(
+            'seller', 'category'
+        ).prefetch_related('images', 'variants', 'certifications').distinct().order_by('-created_at', 'id')
+        status = self.request.query_params.get('status')
+        if status and status != 'all':
+            qs = qs.filter(status=status)
+        return qs
+
+
+class AdminProductCountsView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+
+    def get(self, request):
+        from django.db.models import Count
+        rows = Product.objects.values('status').annotate(n=Count('id'))
+        counts = {row['status']: row['n'] for row in rows}
+        counts['all'] = Product.objects.count()
+        return Response(counts)
 
 
 class AdminProductDetailView(generics.RetrieveUpdateAPIView):
